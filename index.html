@@ -1,0 +1,2326 @@
+<!doctype html>
+<html lang="de" data-theme="system">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#4F46E5">
+<meta name="color-scheme" content="light dark">
+<title>Finanz-Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root {
+  --bg: #F5F6FA; --card: #FFFFFF; --card2: #F8F9FC; --text: #0F172A; --muted: #64748B; --line: #E7E9F0;
+  --accent: #4F46E5; --accent-soft: #EEF0FF; --accent-ink: #FFFFFF;
+  --ok: #16A34A; --warn: #D97706; --bad: #DC2626; --ok-soft: #E8F7EE; --warn-soft: #FFF4DF; --bad-soft: #FDECEC;
+  --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+  --radius: 20px; --nav-h: 68px;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #0B1020; --card: #141A2E; --card2: #1A2140; --text: #E8ECF8; --muted: #93A0BE; --line: #262E4D;
+  --accent: #8B93FF; --accent-soft: #232A52; --accent-ink: #0B1020;
+  --ok: #4ADE80; --warn: #FBBF24; --bad: #F87171; --ok-soft: #12301F; --warn-soft: #362A0E; --bad-soft: #3A1717;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35); color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    --bg: #0B1020; --card: #141A2E; --card2: #1A2140; --text: #E8ECF8; --muted: #93A0BE; --line: #262E4D;
+    --accent: #8B93FF; --accent-soft: #232A52; --accent-ink: #0B1020;
+    --ok: #4ADE80; --warn: #FBBF24; --bad: #F87171; --ok-soft: #12301F; --warn-soft: #362A0E; --bad-soft: #3A1717;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35); color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
+h1 { font-size: 26px; } h2 { font-size: 18px; } h3 { font-size: 15px; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); } .small { font-size: 13px; } .tiny { font-size: 12px; }
+.hide { display: none !important; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; border-radius: 10px; }
+
+/* Layout */
+#app { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
+.side { position: sticky; top: 0; height: 100vh; padding: 24px 16px; border-right: 1px solid var(--line); background: var(--card); display: flex; flex-direction: column; gap: 6px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; padding: 4px 10px 18px; }
+.brand-logo { width: 34px; height: 34px; border-radius: 11px; background: linear-gradient(135deg, #6366F1, #22C55E); display: grid; place-items: center; color: #fff; font-size: 17px; }
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 12px; border: 0; background: none; color: var(--muted); font-weight: 600; text-align: left; width: 100%; transition: background .15s, color .15s; }
+.nav-item:hover { background: var(--card2); color: var(--text); }
+.nav-item.active { background: var(--accent-soft); color: var(--accent); }
+.nav-ico { width: 22px; text-align: center; font-size: 17px; }
+.side .spacer { flex: 1; }
+.main { padding: 28px clamp(16px, 3vw, 40px) 60px; max-width: 1180px; width: 100%; min-width: 0; margin: 0 auto; }
+.grid > *, .card { min-width: 0; }
+.bottom { display: none; }
+@media (max-width: 760px) {
+  #app { grid-template-columns: 1fr; }
+  .side { display: none; }
+  .main { padding: 18px 16px calc(var(--nav-h) + 40px); }
+  .bottom { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; height: calc(var(--nav-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
+  .bottom button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 600; color: var(--muted); }
+  .bottom button .nav-ico { font-size: 20px; }
+  .bottom button.active { color: var(--accent); }
+  h1 { font-size: 22px; }
+}
+.page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 22px; }
+.page-head .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.grid { display: grid; gap: 16px; }
+.g4 { grid-template-columns: repeat(4, 1fr); } .g3 { grid-template-columns: repeat(3, 1fr); } .g2 { grid-template-columns: repeat(2, 1fr); }
+.g-hero { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 1000px) { .g4 { grid-template-columns: repeat(2, 1fr); } .g-hero { grid-template-columns: 1fr; } .g3 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .g2, .g3 { grid-template-columns: 1fr; } .g4 { gap: 12px; } }
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; border: 1px solid color-mix(in srgb, var(--line) 60%, transparent); animation: rise .35s ease both; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.kpi { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.kpi .label { color: var(--muted); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.kpi .value { font-size: clamp(20px, 2.4vw, 27px); font-weight: 750; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.kpi .sub { font-size: 12.5px; color: var(--muted); }
+.pos { color: var(--ok); } .neg { color: var(--bad); } .warnc { color: var(--warn); }
+
+/* Buttons & Formulare */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); background: var(--card); padding: 10px 16px; border-radius: 12px; font-weight: 650; transition: transform .1s, box-shadow .15s, background .15s; min-height: 42px; }
+.btn:hover { background: var(--card2); } .btn:active { transform: scale(.98); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 35%, transparent); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.income { background: var(--ok); color: #fff; border-color: transparent; } .btn.expense { background: var(--bad); color: #fff; border-color: transparent; }
+:root[data-theme="dark"] .btn.income, :root[data-theme="dark"] .btn.expense { color: #0B1020; }
+.btn.danger { background: var(--bad); color: #fff; border-color: transparent; } .btn.danger:disabled { opacity: .45; cursor: not-allowed; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); } .btn.ghost:hover { background: var(--card2); color: var(--text); }
+.btn.sm { padding: 6px 11px; min-height: 34px; font-size: 13px; border-radius: 10px; }
+.btn.big { padding: 13px 22px; font-size: 16px; border-radius: 14px; }
+.icon-btn { width: 36px; height: 36px; display: inline-grid; place-items: center; border-radius: 10px; border: 0; background: transparent; color: var(--muted); font-size: 16px; }
+.icon-btn:hover { background: var(--card2); color: var(--text); } .icon-btn.del:hover { background: var(--bad-soft); color: var(--bad); }
+label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 650; color: var(--muted); min-width: 0; }
+.input, select.input, textarea.input { width: 100%; padding: 11px 13px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); font-weight: 500; min-height: 44px; transition: border-color .15s, box-shadow .15s; }
+.input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+.input.invalid { border-color: var(--bad); }
+textarea.input { min-height: 70px; resize: vertical; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; } .form-grid .full { grid-column: 1 / -1; }
+@media (max-width: 520px) { .form-grid { grid-template-columns: 1fr; } }
+.seg { display: inline-flex; background: var(--card2); border: 1px solid var(--line); padding: 4px; border-radius: 13px; gap: 4px; }
+.seg button { border: 0; background: none; padding: 8px 14px; border-radius: 10px; font-weight: 650; color: var(--muted); min-height: 36px; }
+.seg button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(15,23,42,.12); }
+.check { display: flex; align-items: flex-start; gap: 10px; font-weight: 550; color: var(--text); font-size: 14px; }
+.check input { width: 20px; height: 20px; margin-top: 1px; accent-color: var(--accent); flex: none; }
+.err { background: var(--bad-soft); color: var(--bad); padding: 10px 14px; border-radius: 12px; font-weight: 600; font-size: 14px; }
+.note { background: var(--accent-soft); color: var(--text); padding: 10px 14px; border-radius: 12px; font-size: 13.5px; }
+.note.warn { background: var(--warn-soft); } .note.bad { background: var(--bad-soft); } .note.ok { background: var(--ok-soft); }
+
+/* Monatswähler */
+.monthpick { display: inline-flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px; box-shadow: var(--shadow); }
+.monthpick .lab { min-width: 150px; text-align: center; font-weight: 700; text-transform: capitalize; border: 0; background: none; padding: 6px 8px; border-radius: 10px; }
+.monthpick .lab:hover { background: var(--card2); }
+.tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.tag.ok { background: var(--ok-soft); color: var(--ok); } .tag.warn { background: var(--warn-soft); color: var(--warn); } .tag.bad { background: var(--bad-soft); color: var(--bad); } .tag.mute { background: var(--card2); color: var(--muted); }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; display: inline-block; }
+.badge-ico { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; font-size: 19px; flex: none; }
+
+/* Fortschrittsbalken */
+.bar { height: 9px; background: var(--card2); border-radius: 999px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.bar > i { display: block; height: 100%; border-radius: 999px; width: 0; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+.bar.thick { height: 12px; }
+
+/* Budgetkreis */
+.ring-wrap { position: relative; width: min(100%, 440px); margin: 0 auto; aspect-ratio: 1; }
+.ring-wrap svg { width: 100%; height: 100%; overflow: visible; }
+.ring-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; padding: 22%; }
+.ring-center .big { font-size: clamp(20px, 4.4vw, 30px); font-weight: 780; letter-spacing: -.02em; line-height: 1.1; }
+.ring-center .pct { font-size: clamp(15px, 3vw, 20px); font-weight: 700; margin-top: 4px; }
+.seg-path { cursor: pointer; transition: opacity .2s, filter .2s; }
+.seg-fill { transition: stroke-dasharray 1s cubic-bezier(.2,.8,.2,1); }
+.seg-group.dim .seg-path { opacity: .35; }
+.seg-group.sel .seg-track { filter: drop-shadow(0 0 6px rgba(0,0,0,.25)); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.seg-over { animation: pulse 1.6s ease-in-out infinite; }
+.legend { display: flex; flex-direction: column; margin-top: 18px; }
+.legend-row { display: grid; grid-template-columns: 14px minmax(90px, 1.4fr) 1fr 1fr 1fr; gap: 10px; align-items: center; padding: 10px 8px; border-radius: 12px; border: 0; background: none; text-align: left; width: 100%; }
+.legend-row:hover, .legend-row.sel { background: var(--card2); }
+.legend-row.head { color: var(--muted); font-size: 12px; font-weight: 700; cursor: default; padding-bottom: 4px; } .legend-row.head:hover { background: none; }
+.legend-row .r { text-align: right; }
+@media (max-width: 600px) { .legend-row { grid-template-columns: 14px 1fr auto auto; } .legend-row .hb { display: none; } }
+.detail { margin-top: 14px; border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: var(--card2); animation: rise .25s ease both; }
+
+/* Listen */
+.list { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); min-width: 0; }
+.row:last-child { border-bottom: 0; }
+.row .grow { flex: 1; min-width: 0; }
+.row .title { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .amount { font-weight: 720; white-space: nowrap; }
+.row .acts { display: flex; gap: 2px; flex: none; }
+.empty { text-align: center; padding: 34px 16px; color: var(--muted); }
+.empty .em-ico { font-size: 34px; margin-bottom: 6px; }
+.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+
+/* Modal */
+.overlay { position: fixed; inset: 0; background: rgba(8,12,28,.55); backdrop-filter: blur(3px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; animation: fade .2s ease both; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.modal { background: var(--card); border-radius: 24px; width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow: auto; padding: 24px; box-shadow: 0 30px 80px rgba(0,0,0,.35); animation: pop .25s cubic-bezier(.2,.9,.3,1.2) both; }
+@keyframes pop { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+.modal h2 { margin-bottom: 16px; }
+.modal .foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+@media (max-width: 600px) { .overlay { align-items: flex-end; padding: 0; } .modal { border-radius: 24px 24px 0 0; max-height: 92dvh; width: 100%; } }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { width: 32px; height: 32px; border-radius: 50%; border: 3px solid transparent; box-shadow: inset 0 0 0 2px rgba(255,255,255,.55); padding: 0; transition: transform .12s; }
+.swatch:hover { transform: scale(1.12); } .swatch.on { border-color: var(--text); }
+.icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; max-height: 150px; overflow: auto; padding: 2px; }
+.icon-opt { height: 42px; border-radius: 12px; border: 2px solid transparent; background: var(--card2); font-size: 20px; }
+.icon-opt.on { border-color: var(--accent); background: var(--accent-soft); }
+.preview { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px dashed var(--line); border-radius: 16px; }
+.opt { display: flex; gap: 12px; padding: 14px; border: 2px solid var(--line); border-radius: 16px; cursor: pointer; align-items: flex-start; }
+.opt.on { border-color: var(--accent); background: var(--accent-soft); } .opt.on.bad { border-color: var(--bad); background: var(--bad-soft); }
+.opt input[type=radio] { margin-top: 3px; accent-color: var(--accent); width: 18px; height: 18px; }
+.toast-box { position: fixed; z-index: 200; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 20px); display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+@media (min-width: 761px) { .toast-box { bottom: 28px; } }
+.toast { background: #0F172A; color: #fff; padding: 11px 18px; border-radius: 14px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.3); animation: pop .25s both; pointer-events: auto; max-width: min(92vw, 460px); }
+.toast.bad { background: var(--bad); }
+.fab { display: none; }
+.charts text { fill: var(--muted); font-size: 11px; }
+.tt { position: fixed; z-index: 150; pointer-events: none; background: #0F172A; color: #fff; padding: 8px 11px; border-radius: 10px; font-size: 12.5px; line-height: 1.45; box-shadow: 0 8px 24px rgba(0,0,0,.3); max-width: 240px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin-top: 10px; }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-scroll { overflow-x: auto; }
+table.t { width: 100%; border-collapse: collapse; }
+table.t th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 700; padding: 8px 8px; }
+table.t td { padding: 10px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+table.t td.r, table.t th.r { text-align: right; }
+.cat-sec h2 { display: flex; align-items: center; gap: 10px; }
+.cat-row { display: flex; align-items: center; gap: 14px; padding: 12px 6px; border-bottom: 1px solid var(--line); transition: background .15s; border-radius: 12px; }
+.cat-row:hover { background: var(--card2); } .cat-row:last-child { border-bottom: 0; }
+.cat-row .grow { flex: 1; min-width: 0; }
+.cat-name { font-weight: 700; } .cat-meta { color: var(--muted); font-size: 12.5px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+</style>
+</head>
+<body>
+<div id="app"><noscript>Für den Finanz-Tracker wird JavaScript benötigt.</noscript></div>
+<script>
+const LOGIC = (() => {
+// ============================================================================
+// logic.js – reine Datenlogik (ohne DOM). Alle Beträge sind GANZE CENT-WERTE,
+// damit keine Rundungsfehler durch Kommazahlen entstehen.
+// ============================================================================
+
+// ---------- Konstanten ------------------------------------------------------
+const PALETTE = [
+  '#F97316', '#F59E0B', '#84CC16', '#22C55E', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6',
+  '#6366F1', '#8B5CF6', '#A855F7', '#EC4899', '#F43F5E', '#EF4444', '#78716C', '#94A3B8',
+];
+const ICONS = [
+  '🛒', '🍽️', '☕', '🎮', '🎬', '🛍️', '👕', '🚆', '🚗', '⛽', '🚲', '✈️', '🏖️', '🏠', '💡', '📱',
+  '📺', '🎵', '📚', '🎓', '💊', '🏥', '💪', '🐶', '👶', '🎁', '🛡️', '🧾', '🔧', '📦', '💼', '🧑‍💻',
+  '💶', '🏦', '📈', '↩️', '🏷️', '🌱', '🎉', '⭐',
+];
+const PAYMENT_METHODS = ['Karte', 'Bargeld', 'Überweisung', 'Lastschrift', 'PayPal', 'Sonstige'];
+const UNCAT_COLOR = '#94A3B8';
+const UNCAT_NAME = 'Ohne Kategorie';
+
+// ---------- Datum -----------------------------------------------------------
+const pad = (n) => String(n).padStart(2, '0');
+function todayISO(d = new Date()) {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+const monthOf = (iso) => iso.slice(0, 7);
+function addMonths(month, n) {
+  const [y, m] = month.split('-').map(Number);
+  const t = y * 12 + (m - 1) + n;
+  return `${Math.floor(t / 12)}-${pad((t % 12) + 1)}`;
+}
+function monthIndex(month) {
+  const [y, m] = month.split('-').map(Number);
+  return y * 12 + (m - 1);
+}
+function monthRange(from, to) {
+  const out = [];
+  for (let m = from; m <= to && out.length < 600; m = addMonths(m, 1)) out.push(m);
+  return out;
+}
+function daysInMonth(month) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+function isValidISODate(s) {
+  if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const [y, m, d] = s.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d && y >= 1900 && y <= 2200;
+}
+const isMonthKey = (s) => typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
+function occurrenceDate(month, day) {
+  return `${month}-${pad(Math.min(day, daysInMonth(month)))}`;
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  return `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
+}
+function monthLabel(month) {
+  const [y, m] = month.split('-').map(Number);
+  return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(y, m - 1, 1)));
+}
+function monthShort(month) {
+  const [y, m] = month.split('-').map(Number);
+  const s = new Intl.DateTimeFormat('de-DE', { month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(y, m - 1, 1)));
+  return `${s.replace('.', '')} ${String(y).slice(2)}`;
+}
+
+// ---------- Geld ------------------------------------------------------------
+const eurFmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+const eurFmtShort = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const fmtEuro = (cents) => eurFmt.format(cents / 100);
+/** Ohne Nachkommastellen, wenn der Betrag glatt ist (z. B. „1.500 €“). */
+const fmtEuroShort = (cents) => (cents % 100 === 0 ? eurFmtShort.format(cents / 100) : eurFmt.format(cents / 100));
+const fmtPct = (v, d = 0) => `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: d }).format(v)} %`;
+/** Wert für Eingabefelder: 1234,5 -> „1234,50“, 300 -> „300“ */
+function centsToInput(cents) {
+  if (cents == null) return '';
+  return cents % 100 === 0 ? String(cents / 100) : (cents / 100).toFixed(2).replace('.', ',');
+}
+/** Deutsche Eingabe → Cent. „1.234,56“, „12,5“, „12.50“, „300 €“. Gibt null bei ungültiger Eingabe zurück. */
+function parseEuro(input) {
+  if (input == null) return null;
+  let s = String(input).trim().replace(/[€\s]/g, '');
+  if (!s) return null;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+  const c = Math.round(parseFloat(s) * 100);
+  return Number.isSafeInteger(c) && c <= 9_999_999_999 ? c : null;
+}
+
+// ---------- IDs / Zufall ----------------------------------------------------
+function uid() {
+  if (globalThis.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ---------- Datenmodell & Patches ------------------------------------------
+const COLLS = ['categories', 'transactions', 'rules', 'budgets', 'goals'];
+const keyOf = (coll, item) => (coll === 'budgets' ? item.month : item.id);
+
+function emptyData() {
+  return {
+    categories: [], transactions: [], rules: [], budgets: [], goals: [],
+    settings: { theme: 'system', seeded: true, hasSample: false },
+  };
+}
+
+/** Wendet einen Patch {coll:{put:[],del:[]}, settings:{}} unveränderlich an. */
+function applyPatch(data, patch) {
+  const next = { ...data };
+  for (const coll of COLLS) {
+    const p = patch[coll];
+    if (!p) continue;
+    let arr = data[coll];
+    if (p.del && p.del.length) {
+      const del = new Set(p.del);
+      arr = arr.filter((x) => !del.has(keyOf(coll, x)));
+    }
+    if (p.put && p.put.length) {
+      const idx = new Map(arr.map((x, i) => [keyOf(coll, x), i]));
+      arr = arr.slice();
+      for (const item of p.put) {
+        const k = keyOf(coll, item);
+        if (idx.has(k)) arr[idx.get(k)] = item;
+        else { idx.set(k, arr.length); arr.push(item); }
+      }
+    }
+    next[coll] = arr;
+  }
+  if (patch.settings) next.settings = { ...data.settings, ...patch.settings };
+  return next;
+}
+function mergePatch(a, b) {
+  const out = {};
+  for (const coll of COLLS) {
+    if (!a[coll] && !b[coll]) continue;
+    out[coll] = {
+      put: [...(a[coll]?.put || []), ...(b[coll]?.put || [])],
+      del: [...(a[coll]?.del || []), ...(b[coll]?.del || [])],
+    };
+  }
+  const settings = { ...(a.settings || {}), ...(b.settings || {}) };
+  if (Object.keys(settings).length) out.settings = settings;
+  return out;
+}
+const isEmptyPatch = (p) =>
+  !p.settings && COLLS.every((c) => !p[c] || (!(p[c].put && p[c].put.length) && !(p[c].del && p[c].del.length)));
+
+// ---------- Standardkategorien & Beispieldaten -----------------------------
+function defaultCategories(sample = false) {
+  const e = (id, name, color, icon, budget) => ({ id, name, type: 'expense', color, icon, defaultBudgetCents: budget ? budget * 100 : null, sample });
+  const i = (id, name, color, icon) => ({ id, name, type: 'income', color, icon, defaultBudgetCents: null, sample });
+  return [
+    i('inc-gehalt', 'Gehalt', '#16A34A', '💼'),
+    i('inc-nebenjob', 'Nebenjob', '#0D9488', '🧑‍💻'),
+    i('inc-bafoeg', 'BAföG', '#2563EB', '🎓'),
+    i('inc-kindergeld', 'Kindergeld', '#D97706', '👶'),
+    i('inc-erstattung', 'Rückerstattungen', '#7C3AED', '↩️'),
+    i('inc-verkauf', 'Verkaufserlöse', '#DB2777', '🏷️'),
+    i('inc-sonstige', 'Sonstige Einnahmen', '#64748B', '💶'),
+    e('exp-lebensmittel', 'Lebensmittel', '#F97316', '🛒', 300),
+    e('exp-restaurants', 'Restaurants', '#EF4444', '🍽️', null),
+    e('exp-freizeit', 'Freizeit', '#8B5CF6', '🎮', 150),
+    e('exp-shopping', 'Shopping', '#EC4899', '🛍️', 150),
+    e('exp-mobilitaet', 'Mobilität', '#3B82F6', '🚆', 100),
+    e('exp-tanken', 'Tanken', '#0EA5E9', '⛽', null),
+    e('exp-versicherungen', 'Versicherungen', '#6366F1', '🛡️', null),
+    e('exp-abos', 'Abonnements', '#14B8A6', '📺', 50),
+    e('exp-wohnen', 'Wohnen', '#B45309', '🏠', null),
+    e('exp-reisen', 'Reisen', '#22C55E', '✈️', 250),
+    e('exp-gesundheit', 'Gesundheit', '#F43F5E', '💊', null),
+    e('exp-sonstiges', 'Sonstiges', '#94A3B8', '📦', 500),
+  ];
+}
+
+/** Daten ohne Beispiele: nur Standardkategorien (Kategorien sind normale, frei änderbare Daten). */
+function freshData() {
+  const d = emptyData();
+  d.categories = defaultCategories(false);
+  return d;
+}
+
+function splitCents(total, n, rnd) {
+  const w = Array.from({ length: n }, () => 0.5 + rnd());
+  const sum = w.reduce((a, b) => a + b, 0);
+  const parts = w.map((x) => Math.floor((x / sum) * total));
+  parts[0] += total - parts.reduce((a, b) => a + b, 0);
+  return parts;
+}
+
+/** Beispieldaten – alles ist mit sample:true gekennzeichnet und lässt sich komplett löschen. */
+function buildSeed(today) {
+  const cur = monthOf(today);
+  const dayNow = Number(today.slice(8, 10));
+  const rnd = mulberry32(20260);
+  const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+  const between = (a, b) => Math.round(a + rnd() * (b - a));
+  const data = emptyData();
+  data.settings.hasSample = true;
+  data.categories = defaultCategories(false);
+  const txs = [];
+  const mk = (type, title, cents, date, categoryId, extra = {}) =>
+    txs.push({ id: uid(), type, title, amountCents: cents, date, categoryId, description: '', paymentMethod: type === 'expense' ? pick(['Karte', 'Karte', 'Bargeld', 'PayPal']) : '', sample: true, ...extra });
+  const start = addMonths(cur, -5);
+  const rule = (type, title, cents, categoryId, day, payment = '') => ({
+    id: uid(), type, title, amountCents: cents, categoryId, description: '', paymentMethod: payment,
+    day, startMonth: start, endMonth: null, skipped: [], sample: true,
+  });
+  data.rules = [
+    rule('income', 'Gehalt', 245000, 'inc-gehalt', 1),
+    rule('expense', 'Miete', 78000, 'exp-wohnen', 1, 'Überweisung'),
+    rule('expense', 'Streaming-Abo', 1299, 'exp-abos', 12, 'Lastschrift'),
+    rule('expense', 'Fitnessstudio', 2990, 'exp-abos', 8, 'Lastschrift'),
+    rule('expense', 'Haftpflichtversicherung', 950, 'exp-versicherungen', 15, 'Lastschrift'),
+  ];
+  const titles = {
+    'exp-lebensmittel': ['REWE', 'Edeka', 'Lidl', 'Aldi', 'Bäckerei', 'Wochenmarkt'],
+    'exp-freizeit': ['Kino', 'Konzertkarten', 'Bowling', 'Escape Room'],
+    'exp-mobilitaet': ['Bahnticket', 'Taxi', 'Carsharing', 'Fahrradreparatur'],
+    'exp-shopping': ['Kleidung', 'Schuhe', 'Elektronik-Zubehör', 'Geschenk'],
+    'exp-restaurants': ['Pizzeria', 'Sushi', 'Café', 'Burger'],
+    'exp-sonstiges': ['Drogerie', 'Post & Versand', 'Haushaltswaren', 'Spende'],
+    'exp-gesundheit': ['Apotheke', 'Zahnarzt Zuzahlung'],
+    'exp-tanken': ['Tankstelle'],
+    'exp-reisen': ['Zugtickets', 'Hotel', 'Ferienwohnung'],
+  };
+  const dayFor = (month, isCur) => (isCur ? 1 + Math.floor(rnd() * Math.max(1, dayNow)) : 1 + Math.floor(rnd() * daysInMonth(month)));
+  for (let k = -5; k <= -1; k++) {
+    const m = addMonths(cur, k);
+    const plan = [
+      ['exp-lebensmittel', between(24000, 33000), 8], ['exp-freizeit', between(9000, 17000), 3],
+      ['exp-mobilitaet', between(4000, 9500), 3], ['exp-shopping', between(8000, 19000), 3],
+      ['exp-restaurants', between(6000, 12000), 3], ['exp-sonstiges', between(6000, 22000), 2],
+    ];
+    if (k === -3) plan.push(['exp-reisen', 24000, 2]);
+    if (k === -1) plan.push(['exp-reisen', 9000, 1]);
+    if (k === -4 || k === -2) plan.push(['exp-gesundheit', between(1500, 4000), 1]);
+    if (k % 2 === 0) plan.push(['exp-tanken', between(4500, 7000), 1]);
+    for (const [cat, total, n] of plan) {
+      splitCents(total, n, rnd).forEach((c) => mk('expense', pick(titles[cat]), c, `${m}-${pad(dayFor(m, false))}`, cat));
+    }
+    if (k !== -3) mk('income', 'Nebenjob', between(18000, 32000), `${m}-${pad(between(10, 25))}`, 'inc-nebenjob');
+    if (k === -2) mk('income', 'Rückerstattung Online-Shop', 3490, `${m}-${pad(between(5, 20))}`, 'inc-erstattung');
+  }
+  // Aktueller Monat – bewusst so gewählt, dass der Budgetkreis alle Zustände zeigt
+  const cd = () => `${cur}-${pad(1 + Math.floor(rnd() * Math.max(1, dayNow)))}`;
+  [[5240, 'REWE'], [4785, 'Edeka'], [4975, 'Lidl']].forEach(([c, t]) => mk('expense', t, c, cd(), 'exp-lebensmittel'));
+  [[7000, 'Konzertkarten'], [5000, 'Kino']].forEach(([c, t]) => mk('expense', t, c, cd(), 'exp-freizeit'));
+  mk('expense', 'Bahnticket', 2500, cd(), 'exp-mobilitaet');
+  [[8900, 'Kleidung'], [4600, 'Schuhe'], [3000, 'Geschenk']].forEach(([c, t]) => mk('expense', t, c, cd(), 'exp-shopping'));
+  mk('expense', 'Pizzeria', 3850, cd(), 'exp-restaurants');
+  mk('expense', 'Drogerie', 4200, cd(), 'exp-sonstiges');
+  data.transactions = txs;
+  data.budgets = monthRange(start, cur).map((m) => ({ month: m, items: defaultBudgetItems(data), sample: true }));
+  data.goals = [
+    { id: uid(), name: 'Urlaub', targetCents: 150000, savedCents: 62000, targetDate: `${addMonths(cur, 8)}-15`, color: '#22C55E', description: 'Sommerurlaub am Meer', sample: true },
+    { id: uid(), name: 'Notgroschen', targetCents: 500000, savedCents: 185000, targetDate: `${addMonths(cur, 18)}-01`, color: '#3B82F6', description: '3 Monatsgehälter als Reserve', sample: true },
+    { id: uid(), name: 'Kamera', targetCents: 80000, savedCents: 32000, targetDate: `${addMonths(cur, 5)}-30`, color: '#EC4899', description: '', sample: true },
+  ];
+  return data;
+}
+
+/** Entfernt ALLE Beispieldaten (Transaktionen, Serien, Sparziele, Budgetmonate). Kategorien bleiben erhalten. */
+function deleteSamplePatch(data) {
+  return {
+    transactions: { del: data.transactions.filter((t) => t.sample).map((t) => t.id) },
+    rules: { del: data.rules.filter((r) => r.sample).map((r) => r.id) },
+    goals: { del: data.goals.filter((g) => g.sample).map((g) => g.id) },
+    budgets: { del: data.budgets.filter((b) => b.sample).map((b) => b.month) },
+    settings: { hasSample: false },
+  };
+}
+const hasSampleData = (data) =>
+  data.settings.hasSample && (data.transactions.some((t) => t.sample) || data.rules.some((r) => r.sample) || data.goals.some((g) => g.sample) || data.budgets.some((b) => b.sample));
+
+// ---------- Budgets ---------------------------------------------------------
+function defaultBudgetItems(data) {
+  const items = {};
+  for (const c of data.categories) if (c.type === 'expense' && c.defaultBudgetCents > 0) items[c.id] = c.defaultBudgetCents;
+  return items;
+}
+/** Budget je Ausgabenkategorie für einen Monat. Jede Kategorie kommt genau EINMAL vor → keine Doppelzählung. */
+function effectiveBudgets(data, month, today) {
+  const rec = data.budgets.find((b) => b.month === month);
+  const out = {};
+  const valid = new Set(data.categories.filter((c) => c.type === 'expense').map((c) => c.id));
+  if (rec) {
+    for (const [id, v] of Object.entries(rec.items)) if (valid.has(id) && v > 0) out[id] = v;
+    return out;
+  }
+  if (month >= monthOf(today)) return defaultBudgetItems(data); // Planung für zukünftige Monate
+  return out;
+}
+function budgetStatus(spent, budget) {
+  if (spent > budget) return 'over';
+  if (spent === budget) return 'full';
+  if (spent * 100 >= budget * 80) return 'warn';
+  return 'ok';
+}
+const txOfMonth = (data, month) => data.transactions.filter((t) => t.date.startsWith(month));
+const sum = (arr, f) => arr.reduce((a, x) => a + f(x), 0);
+
+function budgetStats(data, month, today) {
+  const eff = effectiveBudgets(data, month, today);
+  const exp = txOfMonth(data, month).filter((t) => t.type === 'expense');
+  const catIds = new Set(data.categories.map((c) => c.id));
+  const spentBy = new Map();
+  for (const t of exp) {
+    const k = t.categoryId && catIds.has(t.categoryId) ? t.categoryId : '';
+    spentBy.set(k, (spentBy.get(k) || 0) + t.amountCents);
+  }
+  const rows = [];
+  const others = [];
+  for (const c of data.categories) {
+    if (c.type !== 'expense') continue;
+    const spent = spentBy.get(c.id) || 0;
+    if (eff[c.id]) {
+      const budget = eff[c.id];
+      rows.push({ cat: c, budget, spent, pct: (spent / budget) * 100, remaining: budget - spent, status: budgetStatus(spent, budget) });
+    } else if (spent > 0) {
+      others.push({ cat: c, spent });
+    }
+  }
+  if (spentBy.get('')) others.push({ cat: { id: '', name: UNCAT_NAME, color: UNCAT_COLOR, icon: '', type: 'expense' }, spent: spentBy.get('') });
+  const total = sum(rows, (r) => r.budget);
+  const spent = sum(rows, (r) => r.spent);
+  return { rows, others, total, spent, pct: total > 0 ? (spent / total) * 100 : null, available: total - spent, unbudgeted: sum(others, (o) => o.spent) };
+}
+
+function monthSummary(data, month, today) {
+  const tx = txOfMonth(data, month);
+  const income = sum(tx.filter((t) => t.type === 'income'), (t) => t.amountCents);
+  const expense = sum(tx.filter((t) => t.type === 'expense'), (t) => t.amountCents);
+  const planned = sum(tx.filter((t) => t.type === 'expense' && t.date > today), (t) => t.amountCents);
+  const b = budgetStats(data, month, today);
+  return {
+    income, expense, balance: income - expense, plannedExpense: planned,
+    savingsRate: income > 0 ? ((income - expense) / income) * 100 : null,
+    budget: b, budgetTotal: b.total, budgetSpent: b.spent, budgetPct: b.pct, budgetAvailable: b.available,
+  };
+}
+
+/** Legt für den aktuellen Monat (und evtl. übersprungene Monate) feste Budgets an,
+ *  damit spätere Änderungen an Standardbudgets vergangene Monate nicht verändern. */
+function ensureBudgetRecordsPatch(data, today) {
+  const cur = monthOf(today);
+  const have = new Set(data.budgets.map((b) => b.month));
+  const past = [...have].filter((m) => m <= cur).sort();
+  let start = past.length ? addMonths(past[past.length - 1], 1) : cur;
+  const floor = addMonths(cur, -24);
+  if (start < floor) start = floor;
+  const put = [];
+  for (const m of monthRange(start, cur)) if (!have.has(m)) put.push({ month: m, items: defaultBudgetItems(data), sample: false });
+  return put.length ? { budgets: { put } } : {};
+}
+function setBudgetPatch(data, month, catId, cents, today) {
+  const rec = data.budgets.find((b) => b.month === month);
+  const items = { ...(rec ? rec.items : effectiveBudgets(data, month, today)) };
+  if (cents > 0) items[catId] = cents; else delete items[catId];
+  return { budgets: { put: [{ month, items, sample: false }] } };
+}
+function copyBudgetsPatch(data, fromMonth, toMonth, today) {
+  return { budgets: { put: [{ month: toMonth, items: { ...effectiveBudgets(data, fromMonth, today) }, sample: false }] } };
+}
+function resetBudgetsPatch(data, month) {
+  return { budgets: { put: [{ month, items: defaultBudgetItems(data), sample: false }] } };
+}
+
+// ---------- Kategorien ------------------------------------------------------
+function saveCategory(data, form, today) {
+  const name = String(form.name || '').trim().replace(/\s+/g, ' ');
+  if (!name) return { error: 'Bitte einen Namen eingeben.' };
+  if (name.length > 30) return { error: 'Der Name darf höchstens 30 Zeichen lang sein.' };
+  if (!['income', 'expense'].includes(form.type)) return { error: 'Bitte Einnahme oder Ausgabe wählen.' };
+  if (!/^#[0-9a-f]{6}$/i.test(form.color || '')) return { error: 'Bitte eine gültige Farbe wählen.' };
+  const dup = data.categories.find((c) => c.type === form.type && c.id !== form.id && c.name.toLowerCase() === name.toLowerCase());
+  if (dup) return { error: `Es gibt bereits eine ${form.type === 'income' ? 'Einnahmen' : 'Ausgaben'}kategorie „${dup.name}“.` };
+  const existing = form.id ? data.categories.find((c) => c.id === form.id) : null;
+  if (existing && existing.type !== form.type) return { error: 'Die Art einer bestehenden Kategorie kann nicht geändert werden.' };
+  let budget = null;
+  if (form.type === 'expense' && form.budgetCents) {
+    if (!(form.budgetCents > 0)) return { error: 'Das Budget muss größer als 0 € sein – oder leer bleiben.' };
+    budget = form.budgetCents;
+  }
+  const cat = {
+    id: existing ? existing.id : uid(), name, type: form.type, color: form.color.toUpperCase(), icon: form.icon || '',
+    defaultBudgetCents: budget, sample: false,
+  };
+  const patch = { categories: { put: [cat] } };
+  if (cat.type === 'expense' && (!existing || existing.defaultBudgetCents !== budget)) {
+    // Standardbudget gilt ab dem aktuellen Monat; vergangene Monate bleiben unverändert.
+    const cur = monthOf(today);
+    const put = data.budgets.filter((b) => b.month >= cur).map((b) => {
+      const items = { ...b.items };
+      if (budget) items[cat.id] = budget; else delete items[cat.id];
+      return { ...b, items, sample: false };
+    });
+    if (put.length) patch.budgets = { put };
+  }
+  return { patch, category: cat };
+}
+
+function categoryUsage(data, id) {
+  return {
+    transactions: data.transactions.filter((t) => t.categoryId === id).length,
+    rules: data.rules.filter((r) => r.categoryId === id).length,
+    budgetMonths: data.budgets.filter((b) => b.items[id] > 0).length,
+  };
+}
+
+/** mode: 'reassign' (targetId nötig) | 'uncategorized' | 'cascade' (löscht auch Transaktionen!) */
+function deleteCategory(data, id, mode, targetId) {
+  const cat = data.categories.find((c) => c.id === id);
+  if (!cat) return { error: 'Kategorie nicht gefunden.' };
+  const txs = data.transactions.filter((t) => t.categoryId === id);
+  const rules = data.rules.filter((r) => r.categoryId === id);
+  const patch = { categories: { del: [id] } };
+  if (mode === 'reassign') {
+    const target = data.categories.find((c) => c.id === targetId);
+    if (!target || target.id === id || target.type !== cat.type) return { error: 'Bitte eine passende andere Kategorie auswählen.' };
+    patch.transactions = { put: txs.map((t) => ({ ...t, categoryId: targetId })) };
+    patch.rules = { put: rules.map((r) => ({ ...r, categoryId: targetId })) };
+  } else if (mode === 'uncategorized') {
+    patch.transactions = { put: txs.map((t) => ({ ...t, categoryId: null })) };
+    patch.rules = { put: rules.map((r) => ({ ...r, categoryId: null })) };
+  } else if (mode === 'cascade') {
+    patch.transactions = { del: txs.map((t) => t.id) };
+    patch.rules = { del: rules.map((r) => r.id) };
+  } else {
+    return { error: 'Unbekannte Löschart.' };
+  }
+  const bPut = [];
+  for (const b of data.budgets) {
+    if (b.items[id] === undefined) continue;
+    const items = { ...b.items };
+    const v = items[id];
+    delete items[id];
+    if (mode === 'reassign' && v > 0) items[targetId] = (items[targetId] || 0) + v; // Summe bleibt erhalten
+    bPut.push({ ...b, items });
+  }
+  if (bPut.length) patch.budgets = { put: bPut };
+  return { patch };
+}
+
+// ---------- Wiederkehrende Transaktionen -----------------------------------
+/** Erzeugt fehlende Monatsbuchungen für alle Serien (bis 12 Monate voraus). Idempotent. */
+function ensureRecurringPatch(data, today) {
+  const horizon = addMonths(monthOf(today), 12);
+  const have = new Set(data.transactions.filter((t) => t.ruleId).map((t) => `${t.ruleId}:${monthOf(t.date)}`));
+  const put = [];
+  for (const r of data.rules) {
+    const last = r.endMonth && r.endMonth < horizon ? r.endMonth : horizon;
+    for (const m of monthRange(r.startMonth, last)) {
+      if (r.skipped.includes(m) || have.has(`${r.id}:${m}`)) continue;
+      have.add(`${r.id}:${m}`);
+      put.push({
+        id: uid(), type: r.type, title: r.title, amountCents: r.amountCents, date: occurrenceDate(m, r.day),
+        categoryId: r.categoryId, description: r.description || '', paymentMethod: r.paymentMethod || '', ruleId: r.id, sample: !!r.sample,
+      });
+    }
+  }
+  return put.length ? { transactions: { put } } : {};
+}
+
+function validateTx(data, form) {
+  const title = String(form.title || '').trim();
+  if (!title) return { error: 'Bitte eine Bezeichnung eingeben.' };
+  if (title.length > 120) return { error: 'Die Bezeichnung darf höchstens 120 Zeichen lang sein.' };
+  if (!['income', 'expense'].includes(form.type)) return { error: 'Bitte Einnahme oder Ausgabe wählen.' };
+  if (!(Number.isInteger(form.amountCents) && form.amountCents > 0)) return { error: 'Bitte einen Betrag größer als 0 eingeben, z. B. 12,50.' };
+  if (!isValidISODate(form.date)) return { error: 'Bitte ein gültiges Datum angeben.' };
+  if (form.categoryId) {
+    const c = data.categories.find((x) => x.id === form.categoryId);
+    if (!c) return { error: 'Die gewählte Kategorie existiert nicht mehr.' };
+    if (c.type !== form.type) return { error: 'Die Kategorie passt nicht zur Art der Buchung.' };
+  }
+  return {
+    clean: {
+      type: form.type, title, amountCents: form.amountCents, date: form.date, categoryId: form.categoryId || null,
+      description: String(form.description || '').trim().slice(0, 500),
+      paymentMethod: form.type === 'expense' ? String(form.paymentMethod || '').slice(0, 40) : '',
+    },
+  };
+}
+
+/** form: {id?, type, title, amountCents, date, categoryId, description, paymentMethod, recurring, applyToFuture} */
+function saveTransaction(data, form, today) {
+  const v = validateTx(data, form);
+  if (v.error) return { error: v.error };
+  const c = v.clean;
+  const existing = form.id ? data.transactions.find((t) => t.id === form.id) : null;
+  if (form.id && !existing) return { error: 'Die Transaktion wurde nicht gefunden.' };
+  const day = Number(c.date.slice(8, 10));
+  const newRule = () => ({
+    id: uid(), type: c.type, title: c.title, amountCents: c.amountCents, categoryId: c.categoryId, description: c.description,
+    paymentMethod: c.paymentMethod, day, startMonth: monthOf(c.date), endMonth: null, skipped: [], sample: false,
+  });
+  if (!existing) {
+    const tx = { id: uid(), ...c, sample: false };
+    if (!form.recurring) return { patch: { transactions: { put: [tx] } } };
+    const rule = newRule();
+    tx.ruleId = rule.id;
+    let patch = { rules: { put: [rule] }, transactions: { put: [tx] } };
+    patch = mergePatch(patch, ensureRecurringPatch(applyPatch(data, patch), today));
+    return { patch };
+  }
+  if (existing.type !== c.type) return { error: 'Die Art einer bestehenden Buchung kann nicht geändert werden.' };
+  const rule = existing.ruleId ? data.rules.find((r) => r.id === existing.ruleId) : null;
+  const oldMonth = monthOf(existing.date);
+  const base = { ...existing, ...c, sample: false };
+  if (!rule && !form.recurring) return { patch: { transactions: { put: [base] } } };
+  if (!rule && form.recurring) {
+    const r = newRule();
+    base.ruleId = r.id;
+    let patch = { rules: { put: [r] }, transactions: { put: [base] } };
+    patch = mergePatch(patch, ensureRecurringPatch(applyPatch(data, patch), today));
+    return { patch };
+  }
+  if (rule && !form.recurring) {
+    // Serie ab diesem Monat beenden, diese Buchung bleibt als Einzelbuchung bestehen
+    const del = data.transactions.filter((t) => t.ruleId === rule.id && t.id !== existing.id && monthOf(t.date) > oldMonth).map((t) => t.id);
+    delete base.ruleId;
+    const r = { ...rule, endMonth: oldMonth, skipped: [...new Set([...rule.skipped, oldMonth])] };
+    return { patch: { rules: { put: [r] }, transactions: { put: [base], del } } };
+  }
+  // Serie bleibt bestehen
+  const newMonth = monthOf(c.date);
+  let r = rule;
+  if (newMonth !== oldMonth) r = { ...r, skipped: [...new Set([...r.skipped, oldMonth])] };
+  const put = [base];
+  if (form.applyToFuture) {
+    r = { ...r, title: c.title, amountCents: c.amountCents, categoryId: c.categoryId, description: c.description, paymentMethod: c.paymentMethod, day };
+    for (const t of data.transactions) {
+      if (t.ruleId === rule.id && t.id !== existing.id && monthOf(t.date) > oldMonth) {
+        put.push({ ...t, title: c.title, amountCents: c.amountCents, categoryId: c.categoryId, description: c.description, paymentMethod: c.paymentMethod, date: occurrenceDate(monthOf(t.date), day) });
+      }
+    }
+  }
+  return { patch: { rules: { put: [r] }, transactions: { put } } };
+}
+
+/** scope: 'one' | 'future' (diese und alle folgenden Wiederholungen) */
+function deleteTransaction(data, id, scope = 'one') {
+  const t = data.transactions.find((x) => x.id === id);
+  if (!t) return { error: 'Die Transaktion wurde nicht gefunden.' };
+  const rule = t.ruleId ? data.rules.find((r) => r.id === t.ruleId) : null;
+  const m = monthOf(t.date);
+  if (!rule) return { patch: { transactions: { del: [id] } } };
+  if (scope === 'future') {
+    const del = data.transactions.filter((x) => x.ruleId === rule.id && monthOf(x.date) >= m).map((x) => x.id);
+    const end = addMonths(m, -1);
+    if (end < rule.startMonth) return { patch: { transactions: { del }, rules: { del: [rule.id] } } };
+    return { patch: { transactions: { del }, rules: { put: [{ ...rule, endMonth: end }] } } };
+  }
+  return { patch: { transactions: { del: [id] }, rules: { put: [{ ...rule, skipped: [...new Set([...rule.skipped, m])] }] } } };
+}
+
+// ---------- Sparziele (zählen NICHT als Ausgabe) ---------------------------
+function saveGoal(data, form) {
+  const name = String(form.name || '').trim();
+  if (!name) return { error: 'Bitte einen Namen eingeben.' };
+  if (!(Number.isInteger(form.targetCents) && form.targetCents > 0)) return { error: 'Bitte einen Zielbetrag größer als 0 eingeben.' };
+  const saved = form.savedCents == null ? 0 : form.savedCents;
+  if (!(Number.isInteger(saved) && saved >= 0)) return { error: 'Der gesparte Betrag darf nicht negativ sein.' };
+  if (form.targetDate && !isValidISODate(form.targetDate)) return { error: 'Bitte ein gültiges Zieldatum angeben.' };
+  if (!/^#[0-9a-f]{6}$/i.test(form.color || '')) return { error: 'Bitte eine gültige Farbe wählen.' };
+  const existing = form.id ? data.goals.find((g) => g.id === form.id) : null;
+  const goal = {
+    id: existing ? existing.id : uid(), name: name.slice(0, 60), targetCents: form.targetCents, savedCents: saved,
+    targetDate: form.targetDate || null, color: form.color.toUpperCase(), description: String(form.description || '').trim().slice(0, 300), sample: false,
+  };
+  return { patch: { goals: { put: [goal] } } };
+}
+function goalProgress(goal, today) {
+  const pct = Math.min(100, (goal.savedCents / goal.targetCents) * 100);
+  const remaining = Math.max(0, goal.targetCents - goal.savedCents);
+  let monthsLeft = null, perMonth = null;
+  if (goal.targetDate) {
+    monthsLeft = monthIndex(monthOf(goal.targetDate)) - monthIndex(monthOf(today));
+    if (remaining > 0 && monthsLeft > 0) perMonth = Math.ceil(remaining / monthsLeft);
+  }
+  return { pct, remaining, monthsLeft, perMonth, done: goal.savedCents >= goal.targetCents };
+}
+
+// ---------- Statistik -------------------------------------------------------
+function statMonths(data, key, today) {
+  const cur = monthOf(today);
+  if (key === 'current') return [cur];
+  if (key === 'all') {
+    const first = data.transactions.map((t) => monthOf(t.date)).filter((m) => m <= cur).sort()[0] || cur;
+    return monthRange(first, cur);
+  }
+  return monthRange(addMonths(cur, -(Number(key) - 1)), cur);
+}
+function monthStatRow(data, month, today) {
+  const s = monthSummary(data, month, today);
+  return {
+    month, income: s.income, expense: s.expense, balance: s.balance, savingsRate: s.savingsRate,
+    budgetTotal: s.budgetTotal, budgetSpent: s.budgetSpent, util: s.budgetPct,
+  };
+}
+function categoryTotals(data, months, type) {
+  const set = new Set(months);
+  const totals = new Map();
+  const ids = new Set(data.categories.map((c) => c.id));
+  for (const t of data.transactions) {
+    if (t.type !== type || !set.has(monthOf(t.date))) continue;
+    const k = t.categoryId && ids.has(t.categoryId) ? t.categoryId : '';
+    totals.set(k, (totals.get(k) || 0) + t.amountCents);
+  }
+  const out = [];
+  for (const [id, total] of totals) {
+    const c = data.categories.find((x) => x.id === id);
+    out.push({ id, name: c ? c.name : UNCAT_NAME, color: c ? c.color : UNCAT_COLOR, icon: c ? c.icon : '', total });
+  }
+  return out.sort((a, b) => b.total - a.total);
+}
+/** Vergleich zweier Monate. diff = b − a. pct = Veränderung in % von a (null, wenn a = 0).
+ *  Bei Quoten (Sparquote, Budgetverbrauch) ist diff in Prozentpunkten. */
+function compareMonths(data, a, b, today) {
+  const ra = monthSummary(data, a, today), rb = monthSummary(data, b, today);
+  const money = (x, y) => ({ a: x, b: y, diff: y - x, pct: x !== 0 ? ((y - x) / Math.abs(x)) * 100 : null });
+  const rate = (x, y) => ({ a: x, b: y, diff: x == null || y == null ? null : y - x, pct: null });
+  const merge = (type) => {
+    const A = categoryTotals(data, [a], type), B = categoryTotals(data, [b], type);
+    const map = new Map();
+    for (const c of A) map.set(c.id, { ...c, a: c.total, b: 0 });
+    for (const c of B) { const e = map.get(c.id); if (e) e.b = c.total; else map.set(c.id, { ...c, a: 0, b: c.total }); }
+    return [...map.values()].map(({ total, ...c }) => ({ ...c, diff: c.b - c.a, pct: c.a !== 0 ? ((c.b - c.a) / c.a) * 100 : null }))
+      .sort((x, y) => Math.abs(y.diff) - Math.abs(x.diff) || y.b + y.a - (x.b + x.a));
+  };
+  return {
+    kpis: { income: money(ra.income, rb.income), expense: money(ra.expense, rb.expense), balance: money(ra.balance, rb.balance), savingsRate: rate(ra.savingsRate, rb.savingsRate), budgetPct: rate(ra.budgetPct, rb.budgetPct) },
+    expenseCats: merge('expense'), incomeCats: merge('income'),
+  };
+}
+function categoryMonthly(data, months, catId, type) {
+  return months.map((m) =>
+    sum(data.transactions.filter((t) => t.type === type && monthOf(t.date) === m && (t.categoryId || '') === catId), (t) => t.amountCents));
+}
+
+// ---------- Export / Import -------------------------------------------------
+const BACKUP_VERSION = 1; // bei Änderungen am Datenformat erhöhen und in parseBackup migrieren
+function toBackupJson(data, now = new Date()) {
+  return JSON.stringify({ app: 'finanz-tracker', version: BACKUP_VERSION, exportedAt: now.toISOString(), data: {
+    categories: data.categories, transactions: data.transactions, rules: data.rules, budgets: data.budgets, goals: data.goals, settings: data.settings,
+  } }, null, 1);
+}
+const csvText = (s) => {
+  let v = String(s ?? '');
+  if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; // Schutz vor Formel-Injection in Excel
+  return /[";\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+};
+function toCsv(data) {
+  const cat = new Map(data.categories.map((c) => [c.id, c.name]));
+  const rows = [['Datum', 'Art', 'Bezeichnung', 'Kategorie', 'Betrag (EUR)', 'Beschreibung', 'Zahlungsart', 'Wiederkehrend']];
+  const list = [...data.transactions].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  for (const t of list) {
+    rows.push([fmtDate(t.date), t.type === 'income' ? 'Einnahme' : 'Ausgabe', t.title, t.categoryId ? cat.get(t.categoryId) || UNCAT_NAME : UNCAT_NAME,
+      (t.amountCents / 100).toFixed(2).replace('.', ','), t.description || '', t.paymentMethod || '', t.ruleId ? 'ja' : 'nein']);
+  }
+  return '﻿' + rows.map((r) => r.map(csvText).join(';')).join('\r\n');
+}
+
+/** Prüft ein Backup streng. Gibt {data} oder {error} zurück – es wird nie halb importiert. */
+function parseBackup(text) {
+  let obj;
+  try { obj = JSON.parse(text); } catch { return { error: 'Die Datei ist keine gültige JSON-Datei.' }; }
+  if (!obj || obj.app !== 'finanz-tracker' || typeof obj.data !== 'object' || !obj.data) return { error: 'Das ist kein Finanz-Tracker-Backup.' };
+  if (!Number.isInteger(obj.version) || obj.version < 1) return { error: 'Im Backup fehlt die Versionsangabe.' };
+  if (obj.version > BACKUP_VERSION) return { error: 'Dieses Backup stammt aus einer neueren App-Version. Bitte die App aktualisieren.' };
+  const d = obj.data;
+  for (const k of COLLS) if (!Array.isArray(d[k])) return { error: `Im Backup fehlt der Bereich „${k}“.` };
+  const isInt = (n) => Number.isSafeInteger(n);
+  const str = (s, max) => typeof s === 'string' && s.length <= max;
+  const out = emptyData();
+  const catIds = new Set();
+  for (const [i, c] of d.categories.entries()) {
+    if (!c || !str(c.id, 80) || !c.id || !str(c.name, 60) || !c.name.trim() || !['income', 'expense'].includes(c.type)) return { error: `Ungültige Kategorie Nr. ${i + 1}.` };
+    if (catIds.has(c.id)) return { error: `Doppelte Kategorie-ID in Kategorie Nr. ${i + 1}.` };
+    catIds.add(c.id);
+    out.categories.push({
+      id: c.id, name: c.name, type: c.type, color: /^#[0-9a-f]{6}$/i.test(c.color) ? c.color.toUpperCase() : UNCAT_COLOR,
+      icon: str(c.icon, 16) ? c.icon : '', defaultBudgetCents: c.type === 'expense' && isInt(c.defaultBudgetCents) && c.defaultBudgetCents > 0 ? c.defaultBudgetCents : null, sample: !!c.sample,
+    });
+  }
+  const catOk = (id) => id == null || id === '' || catIds.has(id);
+  const txIds = new Set();
+  for (const [i, t] of d.transactions.entries()) {
+    if (!t || !str(t.id, 80) || !t.id || txIds.has(t.id) || !['income', 'expense'].includes(t.type) || !str(t.title, 200) || !isInt(t.amountCents) || t.amountCents <= 0 || !isValidISODate(t.date) || !catOk(t.categoryId)) return { error: `Ungültige Transaktion Nr. ${i + 1}.` };
+    txIds.add(t.id);
+    out.transactions.push({ id: t.id, type: t.type, title: t.title, amountCents: t.amountCents, date: t.date, categoryId: t.categoryId || null,
+      description: str(t.description, 1000) ? t.description : '', paymentMethod: str(t.paymentMethod, 60) ? t.paymentMethod : '', ...(str(t.ruleId, 80) && t.ruleId ? { ruleId: t.ruleId } : {}), sample: !!t.sample });
+  }
+  for (const [i, r] of d.rules.entries()) {
+    if (!r || !str(r.id, 80) || !r.id || !['income', 'expense'].includes(r.type) || !str(r.title, 200) || !isInt(r.amountCents) || r.amountCents <= 0 || !catOk(r.categoryId) || !isInt(r.day) || r.day < 1 || r.day > 31 || !isMonthKey(r.startMonth) || !(r.endMonth == null || isMonthKey(r.endMonth)) || !Array.isArray(r.skipped) || !r.skipped.every(isMonthKey)) return { error: `Ungültige Wiederholungsserie Nr. ${i + 1}.` };
+    out.rules.push({ id: r.id, type: r.type, title: r.title, amountCents: r.amountCents, categoryId: r.categoryId || null, description: str(r.description, 1000) ? r.description : '',
+      paymentMethod: str(r.paymentMethod, 60) ? r.paymentMethod : '', day: r.day, startMonth: r.startMonth, endMonth: r.endMonth || null, skipped: [...new Set(r.skipped)], sample: !!r.sample });
+  }
+  const months = new Set();
+  for (const [i, b] of d.budgets.entries()) {
+    if (!b || !isMonthKey(b.month) || months.has(b.month) || typeof b.items !== 'object' || !b.items) return { error: `Ungültiges Budget Nr. ${i + 1}.` };
+    months.add(b.month);
+    const items = {};
+    for (const [k, v] of Object.entries(b.items)) if (catIds.has(k) && isInt(v) && v > 0) items[k] = v;
+    out.budgets.push({ month: b.month, items, sample: !!b.sample });
+  }
+  for (const [i, g] of d.goals.entries()) {
+    if (!g || !str(g.id, 80) || !g.id || !str(g.name, 100) || !g.name.trim() || !isInt(g.targetCents) || g.targetCents <= 0 || !isInt(g.savedCents) || g.savedCents < 0 || !(g.targetDate == null || isValidISODate(g.targetDate))) return { error: `Ungültiges Sparziel Nr. ${i + 1}.` };
+    out.goals.push({ id: g.id, name: g.name, targetCents: g.targetCents, savedCents: g.savedCents, targetDate: g.targetDate || null,
+      color: /^#[0-9a-f]{6}$/i.test(g.color) ? g.color.toUpperCase() : '#3B82F6', description: str(g.description, 600) ? g.description : '', sample: !!g.sample });
+  }
+  const s = d.settings || {};
+  out.settings = { theme: ['light', 'dark', 'system'].includes(s.theme) ? s.theme : 'system', seeded: true, hasSample: !!s.hasSample };
+  return { data: out };
+}
+
+/** Kurzübersicht für Anzeigen (Snapshots, Backup-Dialoge). */
+function dataCounts(data) {
+  return { tx: data.transactions.length, cats: data.categories.length, goals: data.goals.length };
+}
+/** Gibt es echte (nicht als Beispiel markierte) Daten, die einen Verlust wert wären? */
+function hasRealData(data) {
+  return data.transactions.some((t) => !t.sample) || data.goals.some((g) => !g.sample) || data.categories.some((c) => !c.sample && !c.id.startsWith('inc-') && !c.id.startsWith('exp-'));
+}
+
+return { PALETTE, ICONS, PAYMENT_METHODS, UNCAT_COLOR, UNCAT_NAME, pad, todayISO, monthOf, addMonths, monthIndex, monthRange, daysInMonth, isValidISODate, isMonthKey, occurrenceDate, fmtDate, monthLabel, monthShort, fmtEuro, fmtEuroShort, fmtPct, centsToInput, parseEuro, uid, COLLS, keyOf, emptyData, applyPatch, mergePatch, isEmptyPatch, defaultCategories, freshData, buildSeed, deleteSamplePatch, hasSampleData, defaultBudgetItems, effectiveBudgets, budgetStatus, txOfMonth, budgetStats, monthSummary, ensureBudgetRecordsPatch, setBudgetPatch, copyBudgetsPatch, resetBudgetsPatch, saveCategory, categoryUsage, deleteCategory, ensureRecurringPatch, saveTransaction, deleteTransaction, saveGoal, goalProgress, statMonths, monthStatRow, categoryTotals, compareMonths, categoryMonthly, BACKUP_VERSION, toBackupJson, toCsv, parseBackup, dataCounts, hasRealData };
+})();
+const DB = (() => {
+// ============================================================================
+// db.js – lokale Speicherung in IndexedDB. Änderungen werden als Patch
+// transaktional geschrieben (alles oder nichts).
+// Zusätzlich: „meta“ (App-interne Werte, z. B. Backup-Ordner) und
+// „snapshots“ (automatische Sicherungskopien innerhalb der Datenbank).
+// ============================================================================
+const { COLLS, keyOf, emptyData } = LOGIC;
+const DB_NAME = 'finanz-tracker';
+const DB_VERSION = 2;
+const DATA_STORES = { categories: 'id', transactions: 'id', rules: 'id', budgets: 'month', goals: 'id', settings: 'key' };
+const STORES = { ...DATA_STORES, meta: 'key', snapshots: 'id' };
+const MAX_SNAPSHOTS = 15;
+
+function openDb(factory = globalThis.indexedDB) {
+  return new Promise((resolve, reject) => {
+    if (!factory) return reject(new Error('IndexedDB ist in diesem Browser nicht verfügbar.'));
+    const req = factory.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      for (const [name, keyPath] of Object.entries(STORES)) if (!db.objectStoreNames.contains(name)) db.createObjectStore(name, { keyPath });
+    };
+    req.onsuccess = () => {
+      const db = req.result;
+      db.onversionchange = () => db.close(); // blockiert keine künftigen Updates in anderen Tabs
+      resolve(db);
+    };
+    req.onerror = () => reject(req.error || new Error('Datenbank konnte nicht geöffnet werden.'));
+    req.onblocked = () => reject(new Error('Die Datenbank ist in einem anderen Tab blockiert. Bitte andere Tabs schließen.'));
+  });
+}
+const done = (tx) => new Promise((res, rej) => {
+  tx.oncomplete = () => res();
+  tx.onerror = () => rej(tx.error || new Error('Speichern fehlgeschlagen.'));
+  tx.onabort = () => rej(tx.error || new Error('Speichern abgebrochen.'));
+});
+const req2p = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const getAll = (store) => req2p(store.getAll());
+
+/** Lädt alles. Gibt null zurück, wenn die DB noch nie initialisiert wurde. */
+async function loadAll(db) {
+  const tx = db.transaction(Object.keys(DATA_STORES), 'readonly');
+  const out = emptyData();
+  for (const c of COLLS) out[c] = await getAll(tx.objectStore(c));
+  const settings = await getAll(tx.objectStore('settings'));
+  const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
+  if (!map.seeded) return null;
+  out.settings = { ...out.settings, ...map };
+  return out;
+}
+
+async function writeAll(db, data) {
+  const tx = db.transaction(Object.keys(DATA_STORES), 'readwrite');
+  for (const c of COLLS) { const s = tx.objectStore(c); s.clear(); for (const item of data[c]) s.put(item); }
+  const st = tx.objectStore('settings'); st.clear();
+  for (const [key, value] of Object.entries({ ...data.settings, seeded: true })) st.put({ key, value });
+  await done(tx);
+}
+
+async function writePatch(db, patch) {
+  const names = COLLS.filter((c) => patch[c]);
+  if (patch.settings) names.push('settings');
+  if (!names.length) return;
+  const tx = db.transaction(names, 'readwrite');
+  for (const c of COLLS) {
+    const p = patch[c]; if (!p) continue;
+    const s = tx.objectStore(c);
+    for (const k of p.del || []) s.delete(k);
+    for (const item of p.put || []) s.put(item);
+  }
+  if (patch.settings) { const s = tx.objectStore('settings'); for (const [key, value] of Object.entries(patch.settings)) s.put({ key, value }); }
+  await done(tx);
+}
+
+// ---------- Meta (nicht Teil des Exports) ----------------------------------
+async function getMeta(db, key) {
+  const row = await req2p(db.transaction('meta', 'readonly').objectStore('meta').get(key));
+  return row ? row.value : undefined;
+}
+async function setMeta(db, key, value) {
+  const tx = db.transaction('meta', 'readwrite');
+  tx.objectStore('meta').put({ key, value });
+  await done(tx);
+}
+async function delMeta(db, key) {
+  const tx = db.transaction('meta', 'readwrite');
+  tx.objectStore('meta').delete(key);
+  await done(tx);
+}
+
+// ---------- Snapshots (Sicherungskopien in der Datenbank) -------------------
+/** Legt einen Snapshot an und behält nur die neuesten MAX_SNAPSHOTS. */
+async function addSnapshot(db, reason, json, counts) {
+  const at = new Date().toISOString();
+  const row = { id: `${at}-${Math.random().toString(36).slice(2, 7)}`, at, reason, counts: counts || null, size: json.length, json };
+  const tx = db.transaction('snapshots', 'readwrite');
+  const store = tx.objectStore('snapshots');
+  store.put(row);
+  const keys = await req2p(store.getAllKeys());
+  keys.sort();
+  for (const k of keys.slice(0, Math.max(0, keys.length - MAX_SNAPSHOTS))) store.delete(k);
+  await done(tx);
+  return row.id;
+}
+/** Liste ohne den (großen) JSON-Inhalt, neueste zuerst. */
+async function listSnapshots(db) {
+  const rows = await getAll(db.transaction('snapshots', 'readonly').objectStore('snapshots'));
+  return rows.map(({ json, ...rest }) => rest).sort((a, b) => (a.id < b.id ? 1 : -1));
+}
+async function getSnapshot(db, id) {
+  return req2p(db.transaction('snapshots', 'readonly').objectStore('snapshots').get(id));
+}
+
+return { keyOf, MAX_SNAPSHOTS, openDb, loadAll, writeAll, writePatch, getMeta, setMeta, delMeta, addSnapshot, listSnapshots, getSnapshot };
+})();
+const BACKUP = (() => {
+// ============================================================================
+// backup.js – automatisches Backup in einen frei gewählten Ordner auf dem Gerät
+// (File System Access API: Chrome, Edge, Opera – nicht Firefox/Safari).
+// Der Ordner kann z. B. in OneDrive, iCloud Drive, Dropbox oder auf einem USB-Stick
+// liegen – dann ist die Sicherung auch bei Browser-/PC-Defekt gerettet.
+// ============================================================================
+const { getMeta, setMeta, delMeta } = DB;
+const KEEP_DAILY_FILES = 30;
+const CURRENT_NAME = 'finanz-backup-aktuell.json';
+const DAILY_RE = /^finanz-backup-\d{4}-\d{2}-\d{2}\.json$/;
+
+const folderSupported = () => typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
+
+async function pickFolder(db) {
+  const handle = await window.showDirectoryPicker({ id: 'finanz-tracker-backup', mode: 'readwrite' });
+  await setMeta(db, 'backupDir', handle);
+  return handle;
+}
+async function getFolder(db) {
+  try { return (await getMeta(db, 'backupDir')) || null; } catch { return null; }
+}
+async function forgetFolder(db) { await delMeta(db, 'backupDir'); }
+
+/** 'granted' | 'prompt' | 'denied'. Mit request=true (nur im Klick-Handler!) wird der Zugriff erneut erfragt. */
+async function folderPermission(handle, request = false) {
+  if (!handle) return 'denied';
+  const opts = { mode: 'readwrite' };
+  try {
+    let p = handle.queryPermission ? await handle.queryPermission(opts) : 'granted';
+    if (p !== 'granted' && request && handle.requestPermission) p = await handle.requestPermission(opts);
+    return p;
+  } catch { return 'denied'; }
+}
+
+async function writeFile(dir, name, text) {
+  const fh = await dir.getFileHandle(name, { create: true });
+  const w = await fh.createWritable(); // schreibt in eine Temp-Datei und ersetzt erst beim Schließen
+  await w.write(text);
+  await w.close();
+  return fh;
+}
+
+/** Schreibt „aktuell“ + Tagesdatei, prüft durch Zurücklesen und räumt alte Tagesdateien auf. */
+async function writeFolderBackup(dir, json, todayISO) {
+  const cur = await writeFile(dir, CURRENT_NAME, json);
+  const back = await (await cur.getFile()).text();
+  if (back.length !== json.length) throw new Error('Prüfung nach dem Schreiben fehlgeschlagen (Datei unvollständig).');
+  JSON.parse(back);
+  await writeFile(dir, `finanz-backup-${todayISO}.json`, json);
+  const names = [];
+  for await (const [name, h] of dir.entries()) if (h.kind === 'file' && DAILY_RE.test(name)) names.push(name);
+  names.sort();
+  for (const n of names.slice(0, Math.max(0, names.length - KEEP_DAILY_FILES))) { try { await dir.removeEntry(n); } catch { /* ignorieren */ } }
+  return { name: dir.name, files: Math.min(names.length, KEEP_DAILY_FILES) };
+}
+
+return { KEEP_DAILY_FILES, CURRENT_NAME, folderSupported, pickFolder, getFolder, forgetFolder, folderPermission, writeFolderBackup };
+})();
+const UI = (() => {
+// ============================================================================
+// ui.js – kleine DOM-Helfer, Dialoge und SVG-Diagramme (ohne Fremdbibliotheken).
+// Nutzereingaben werden NIE als HTML eingefügt, sondern nur als Text.
+// ============================================================================
+const { fmtEuro, fmtEuroShort } = LOGIC;
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+function h(tag, props, ...children) {
+  const el = document.createElement(tag);
+  applyProps(el, props);
+  append(el, children);
+  return el;
+}
+function s(tag, props, ...children) {
+  const el = document.createElementNS(SVGNS, tag);
+  applyProps(el, props);
+  append(el, children);
+  return el;
+}
+function applyProps(el, props) {
+  if (!props) return;
+  for (const [k, v] of Object.entries(props)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.setAttribute('class', v);
+    else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === 'value' && el instanceof HTMLElement) el.value = v;
+    else if (k === 'checked' && el instanceof HTMLElement) el.checked = !!v;
+    else if (k === 'disabled' && el instanceof HTMLElement) el.disabled = !!v;
+    else el.setAttribute(k, v === true ? '' : String(v));
+  }
+}
+function append(el, children) {
+  for (const c of children.flat(Infinity)) {
+    if (c == null || c === false) continue;
+    el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+}
+const clear = (el) => { while (el.firstChild) el.removeChild(el.firstChild); return el; };
+
+// ---------- Toast -----------------------------------------------------------
+let toastBox;
+function toast(msg, kind = '') {
+  if (!toastBox) { toastBox = h('div', { class: 'toast-box', role: 'status', 'aria-live': 'polite' }); document.body.append(toastBox); }
+  const t = h('div', { class: 'toast ' + kind }, msg);
+  toastBox.append(t);
+  setTimeout(() => t.remove(), kind === 'bad' ? 6000 : 3200);
+}
+
+// ---------- Modal -----------------------------------------------------------
+let openModals = 0;
+/** Öffnet einen Dialog. build(close) liefert den Inhalt. Escape / Klick auf Hintergrund schließt. */
+function modal(build, { dismissable = true, onClose } = {}) {
+  const prev = document.activeElement;
+  const overlay = h('div', { class: 'overlay' });
+  const box = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true' });
+  overlay.append(box);
+  const close = () => {
+    overlay.remove(); document.removeEventListener('keydown', onKey, true);
+    openModals--; if (!openModals) document.body.style.overflow = '';
+    if (onClose) onClose();
+    if (prev && prev.focus) try { prev.focus(); } catch { /* ignore */ }
+  };
+  const onKey = (e) => {
+    if (e.key === 'Escape' && dismissable && overlay === [...document.querySelectorAll('.overlay')].pop()) { e.stopPropagation(); close(); }
+    if (e.key === 'Tab') { // Fokus im Dialog halten
+      const f = [...box.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.disabled && x.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  };
+  overlay.addEventListener('mousedown', (e) => { if (e.target === overlay && dismissable) close(); });
+  document.addEventListener('keydown', onKey, true);
+  openModals++; document.body.style.overflow = 'hidden';
+  append(box, [build(close)]);
+  document.body.append(overlay);
+  const auto = box.querySelector('[data-autofocus]') || box.querySelector('input:not([type=hidden]), select, textarea, button');
+  if (auto) setTimeout(() => auto.focus({ preventScroll: true }), 30);
+  return close;
+}
+
+function confirmDialog({ title, text, confirmLabel = 'Löschen', danger = true, extra }) {
+  return new Promise((resolve) => {
+    let result = false;
+    modal((close) => h('div', null,
+      h('h2', null, title),
+      h('div', { class: 'stack' }, h('p', { style: { margin: 0 } }, text), extra),
+      h('div', { class: 'foot' },
+        h('button', { class: 'btn', type: 'button', 'data-autofocus': '1', onClick: () => close() }, 'Abbrechen'),
+        h('button', { class: 'btn ' + (danger ? 'danger' : 'primary'), type: 'button', onClick: () => { result = true; close(); } }, confirmLabel))),
+    { onClose: () => resolve(result) });
+  });
+}
+
+// ---------- Formular-Helfer -------------------------------------------------
+function field(label, input, hint) {
+  return h('label', { class: 'field' }, h('span', null, label), input, hint ? h('span', { class: 'tiny', style: { fontWeight: 500 } }, hint) : null);
+}
+function segmented(options, value, onChange) {
+  const wrap = h('div', { class: 'seg', role: 'group' });
+  const draw = (v) => {
+    clear(wrap);
+    for (const o of options) wrap.append(h('button', { type: 'button', class: o.value === v ? 'on' : '', disabled: o.disabled, 'aria-pressed': String(o.value === v), onClick: () => { draw(o.value); onChange(o.value); } }, o.label));
+  };
+  draw(value);
+  return wrap;
+}
+function swatchPicker(colors, value, onChange) {
+  const wrap = h('div', { class: 'swatches' });
+  const custom = h('input', { type: 'color', value: /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : '#3b82f6', 'aria-label': 'Eigene Farbe', style: { width: '36px', height: '36px', border: 0, padding: 0, background: 'none', borderRadius: '50%' } });
+  let cur = value;
+  const draw = () => {
+    clear(wrap);
+    for (const c of colors) wrap.append(h('button', { type: 'button', class: 'swatch' + (c.toLowerCase() === cur.toLowerCase() ? ' on' : ''), style: { background: c }, 'aria-label': 'Farbe ' + c, onClick: () => { cur = c; custom.value = c.toLowerCase(); draw(); onChange(c); } }));
+    wrap.append(custom);
+  };
+  custom.addEventListener('input', () => { cur = custom.value.toUpperCase(); draw(); onChange(cur); });
+  draw();
+  return wrap;
+}
+function iconPicker(icons, value, onChange) {
+  const wrap = h('div', { class: 'icons' });
+  let cur = value || '';
+  const draw = () => {
+    clear(wrap);
+    wrap.append(h('button', { type: 'button', class: 'icon-opt' + (!cur ? ' on' : ''), title: 'Kein Symbol', 'aria-label': 'Kein Symbol', style: { fontSize: '13px' }, onClick: () => { cur = ''; draw(); onChange(''); } }, 'Kein'));
+    for (const i of icons) wrap.append(h('button', { type: 'button', class: 'icon-opt' + (i === cur ? ' on' : ''), 'aria-label': 'Symbol ' + i, onClick: () => { cur = i; draw(); onChange(i); } }, i));
+  };
+  draw();
+  return wrap;
+}
+const hexA = (hex, a) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+};
+function catBadge(cat, size = 40) {
+  return h('span', { class: 'badge-ico', style: { background: hexA(cat.color, 0.16), color: cat.color, width: size + 'px', height: size + 'px', fontSize: Math.round(size * 0.48) + 'px' } },
+    cat.icon || h('span', { class: 'dot', style: { background: cat.color, width: '14px', height: '14px' } }));
+}
+
+// ---------- Tooltip ---------------------------------------------------------
+let tt;
+function showTip(e, lines) {
+  if (!tt) { tt = h('div', { class: 'tt', role: 'tooltip' }); document.body.append(tt); }
+  clear(tt); lines.forEach((l, i) => tt.append(i ? h('br') : null, l));
+  tt.style.display = 'block';
+  const w = tt.offsetWidth, hgt = tt.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY - hgt - 10;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if (y < 8) y = e.clientY + 18;
+  tt.style.left = Math.max(8, x) + 'px'; tt.style.top = y + 'px';
+}
+const hideTip = () => { if (tt) tt.style.display = 'none'; };
+
+// ---------- Diagramme -------------------------------------------------------
+/** Runde Achsenschritte (1, 2, 2,5, 5 × 10^n) → keine krummen Beschriftungen. */
+function niceScale(minV, maxV, target = 4) {
+  const span = Math.max(maxV - Math.min(minV, 0), 1e-9);
+  const raw = span / target, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+  const min = Math.min(minV, 0) < 0 ? Math.floor(minV / step) * step : 0;
+  const max = Math.max(Math.ceil(maxV / step) * step, min + step);
+  return { min, max, ticks: Math.round((max - min) / step) };
+}
+const axisFmt = (cents) => {
+  const e = cents / 100;
+  if (Math.abs(e) >= 1000) return (Math.round(e / 100) / 10).toLocaleString('de-DE') + ' T€';
+  return Math.round(e).toLocaleString('de-DE') + ' €';
+};
+const pctAxis = (v) => Math.round(v) + ' %';
+
+function frame(labels, W, Hh, min, max, fmt, ticks = 4) {
+  const m = { l: 54, r: 10, t: 12, b: 28 };
+  const svg = s('svg', { viewBox: `0 0 ${W} ${Hh}`, width: '100%', role: 'img', preserveAspectRatio: 'xMidYMid meet', class: 'charts' });
+  const iw = W - m.l - m.r, ih = Hh - m.t - m.b;
+  const y = (v) => m.t + ih - ((v - min) / (max - min || 1)) * ih;
+  for (let i = 0; i <= ticks; i++) {
+    const v = min + ((max - min) * i) / ticks;
+    svg.append(s('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: 'var(--line)', 'stroke-width': 1 }), s('text', { x: m.l - 8, y: y(v) + 4, 'text-anchor': 'end' }, fmt(v)));
+  }
+  const step = iw / labels.length;
+  const every = Math.ceil(labels.length / Math.max(1, Math.floor(iw / 52)));
+  labels.forEach((l, i) => { if (i % every === 0 || i === labels.length - 1) svg.append(s('text', { x: m.l + step * (i + 0.5), y: Hh - 8, 'text-anchor': 'middle' }, l)); });
+  return { svg, m, iw, ih, y, step };
+}
+
+/** Gruppierte Balken. series: [{name,color,values}] – Werte in Cent. */
+function barChart({ labels, series, selected, onSelect, tipExtra, height = 260, fmt = axisFmt, tipFmt = fmtEuro }) {
+  const W = Math.max(520, labels.length * 54 + 70);
+  const all = series.flatMap((x) => x.values);
+  const sc = niceScale(Math.min(0, ...all), Math.max(0, ...all)); const min = sc.min, max = sc.max;
+  const f = frame(labels, W, height, min, max, fmt, sc.ticks);
+  const gw = f.step * 0.72, bw = gw / series.length;
+  labels.forEach((lab, i) => {
+    const gx = f.m.l + f.step * i + (f.step - gw) / 2;
+    const hit = s('rect', { x: f.m.l + f.step * i, y: f.m.t, width: f.step, height: f.ih, fill: selected === i ? 'var(--accent-soft)' : 'transparent', style: { cursor: onSelect ? 'pointer' : 'default' } });
+    f.svg.append(hit);
+    series.forEach((se, k) => {
+      const v = se.values[i];
+      const y0 = f.y(0), y1 = f.y(v);
+      const r = s('rect', { x: gx + bw * k + 1, width: Math.max(2, bw - 2), rx: 4, fill: se.color, opacity: selected == null || selected === i ? 1 : 0.45, y: y0, height: 0, style: { transition: 'all .7s cubic-bezier(.2,.8,.2,1)', pointerEvents: 'none' } });
+      f.svg.append(r);
+      requestAnimationFrame(() => requestAnimationFrame(() => { r.setAttribute('y', Math.min(y0, y1)); r.setAttribute('height', Math.max(0, Math.abs(y1 - y0))); }));
+    });
+    hit.addEventListener('mousemove', (e) => showTip(e, [h('b', null, lab), ...series.map((se) => `${se.name}: ${tipFmt(se.values[i])}`), ...(tipExtra ? tipExtra(i) : [])]));
+    hit.addEventListener('mouseleave', hideTip);
+    if (onSelect) hit.addEventListener('click', () => onSelect(i));
+  });
+  if (min < 0) f.svg.append(s('line', { x1: f.m.l, x2: W - f.m.r, y1: f.y(0), y2: f.y(0), stroke: 'var(--muted)', 'stroke-width': 1 }));
+  return h('div', { class: 'chart-scroll' }, f.svg, legend(series));
+}
+/** Linien. values dürfen null sein (Lücke). */
+function lineChart({ labels, series, selected, onSelect, height = 240, fmt = axisFmt, tipFmt = fmtEuro, minZero = false }) {
+  const W = Math.max(520, labels.length * 54 + 70);
+  const all = series.flatMap((x) => x.values).filter((v) => v != null);
+  const sc = niceScale(Math.min(...all, 0), Math.max(...all, 1)); const min = sc.min, max = sc.max; void minZero;
+  const f = frame(labels, W, height, min, max, fmt, sc.ticks);
+  if (min < 0) f.svg.append(s('line', { x1: f.m.l, x2: W - f.m.r, y1: f.y(0), y2: f.y(0), stroke: 'var(--muted)', 'stroke-dasharray': '4 4' }));
+  series.forEach((se) => {
+    let d = ''; let pen = false;
+    se.values.forEach((v, i) => { if (v == null) { pen = false; return; } d += `${pen ? 'L' : 'M'}${f.m.l + f.step * (i + 0.5)},${f.y(v)} `; pen = true; });
+    const p = s('path', { d, fill: 'none', stroke: se.color, 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', pathLength: 100, 'stroke-dasharray': '100', 'stroke-dashoffset': 100, style: { transition: 'stroke-dashoffset 1s ease' } });
+    f.svg.append(p); requestAnimationFrame(() => requestAnimationFrame(() => p.setAttribute('stroke-dashoffset', 0)));
+  });
+  labels.forEach((lab, i) => {
+    const hit = s('rect', { x: f.m.l + f.step * i, y: f.m.t, width: f.step, height: f.ih, fill: selected === i ? 'var(--accent-soft)' : 'transparent', 'fill-opacity': selected === i ? 0.7 : 1, style: { cursor: onSelect ? 'pointer' : 'default' } });
+    f.svg.insertBefore(hit, f.svg.querySelector('path'));
+    series.forEach((se) => { const v = se.values[i]; if (v != null) f.svg.append(s('circle', { cx: f.m.l + f.step * (i + 0.5), cy: f.y(v), r: selected === i ? 5.5 : 4, fill: 'var(--card)', stroke: se.color, 'stroke-width': 2.5, style: { pointerEvents: 'none' } })); });
+    hit.addEventListener('mousemove', (e) => showTip(e, [h('b', null, lab), ...series.map((se) => `${se.name}: ${se.values[i] == null ? '–' : tipFmt(se.values[i])}`)]));
+    hit.addEventListener('mouseleave', hideTip);
+    if (onSelect) hit.addEventListener('click', () => onSelect(i));
+  });
+  return h('div', { class: 'chart-scroll' }, f.svg, series.length > 1 ? legend(series) : null);
+}
+const legend = (series) => h('div', { class: 'chart-legend' }, series.map((se) => h('span', null, h('i', { class: 'dot', style: { background: se.color, width: '10px', height: '10px' } }), se.name)));
+
+/** Horizontale Balken je Kategorie (Anteil am Maximum). */
+function hBars(items, { onSelect, selectedId } = {}) {
+  const max = Math.max(1, ...items.map((i) => i.total));
+  const total = items.reduce((a, i) => a + i.total, 0) || 1;
+  return h('div', { class: 'list' }, items.map((it) => {
+    const fill = h('i', { style: { background: it.color } });
+    requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = (it.total / max) * 100 + '%'; }));
+    return h('button', { type: 'button', class: 'row', style: { border: 0, borderBottom: '1px solid var(--line)', background: selectedId === it.id ? 'var(--card2)' : 'none', textAlign: 'left', width: '100%', borderRadius: '10px' }, onClick: () => onSelect && onSelect(it.id) },
+      catBadge(it, 34),
+      h('div', { class: 'grow' }, h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '10px' } }, h('span', { class: 'title' }, it.name), h('span', { class: 'num', style: { fontWeight: 700 } }, fmtEuro(it.total))),
+        h('div', { class: 'bar', style: { marginTop: '6px' } }, fill), h('div', { class: 'tiny muted', style: { marginTop: '3px' } }, Math.round((it.total / total) * 1000) / 10 + ' % der Summe')));
+  }));
+}
+
+/** Kleiner Ring für Sparziele. */
+function miniRing(pct, color, label, size = 92) {
+  const r = 38, c = 2 * Math.PI * r;
+  const arc = s('circle', { cx: 50, cy: 50, r, fill: 'none', stroke: color, 'stroke-width': 11, 'stroke-linecap': 'round', 'stroke-dasharray': `0 ${c}`, transform: 'rotate(-90 50 50)', style: { transition: 'stroke-dasharray 1s cubic-bezier(.2,.8,.2,1)' } });
+  requestAnimationFrame(() => requestAnimationFrame(() => arc.setAttribute('stroke-dasharray', `${(c * Math.min(100, pct)) / 100} ${c}`)));
+  return h('div', { style: { position: 'relative', width: size + 'px', height: size + 'px', flex: 'none' } },
+    s('svg', { viewBox: '0 0 100 100', width: size, height: size }, s('circle', { cx: 50, cy: 50, r, fill: 'none', stroke: hexA(color, 0.18), 'stroke-width': 11 }), arc),
+    h('div', { style: { position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontWeight: 750, fontSize: '15px' } }, label));
+}
+
+// ---------- Segmentierter Budgetkreis --------------------------------------
+const TAU = Math.PI * 2;
+const pt = (cx, cy, r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)];
+function arcPath(cx, cy, r, a0, a1) {
+  const [x0, y0] = pt(cx, cy, r, a0), [x1, y1] = pt(cx, cy, r, a1);
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+}
+/** rows: [{cat,budget,spent,pct,status}] – Segmentbreite ∝ Budget, Füllung = Verbrauch. */
+function budgetRing(rows, { selectedId, onSelect, centerTop, centerPct, centerColor }) {
+  const SIZE = 340, C = SIZE / 2, R = 128, SW = 30;
+  const wrap = h('div', { class: 'ring-wrap' });
+  const svg = s('svg', { viewBox: `0 0 ${SIZE} ${SIZE}`, role: 'img', 'aria-label': 'Budgetkreis: ' + rows.map((r) => `${r.cat.name} ${Math.round(r.pct)} Prozent`).join(', ') });
+  const total = rows.reduce((a, r) => a + r.budget, 0);
+  svg.append(s('circle', { cx: C, cy: C, r: R, fill: 'none', stroke: 'var(--card2)', 'stroke-width': SW + 6 }));
+  if (!rows.length || !total) {
+    svg.append(s('circle', { cx: C, cy: C, r: R, fill: 'none', stroke: 'var(--line)', 'stroke-width': SW, 'stroke-dasharray': '4 8' }));
+  } else {
+    const MIN = 0.035;
+    let shares = rows.map((r) => Math.max(r.budget / total, rows.length > 1 ? MIN : 1));
+    const ss = shares.reduce((a, b) => a + b, 0); shares = shares.map((x) => x / ss);
+    const gap = rows.length > 1 ? 0.05 : 0;
+    let a = 0;
+    rows.forEach((r, i) => {
+      const sweep = shares[i] * TAU;
+      const a0 = a + gap / 2, a1 = Math.min(a + sweep - gap / 2, a0 + TAU - 0.001);
+      a += sweep;
+      const len = a1 - a0;
+      const g = s('g', { class: 'seg-group' + (selectedId && selectedId !== r.cat.id ? ' dim' : '') + (selectedId === r.cat.id ? ' sel' : ''), tabindex: 0, role: 'button', 'aria-label': `${r.cat.name}: ${fmtEuro(r.spent)} von ${fmtEuro(r.budget)}` });
+      const d = arcPath(C, C, R, a0, a1);
+      const track = s('path', { d, class: 'seg-path seg-track', fill: 'none', stroke: hexA(r.cat.color, 0.2), 'stroke-width': SW, 'stroke-linecap': 'butt' });
+      const fillPct = Math.min(1, r.spent / r.budget);
+      const fill = s('path', { d, class: 'seg-path seg-fill', fill: 'none', stroke: r.cat.color, 'stroke-width': SW, 'stroke-linecap': 'butt', pathLength: 100, 'stroke-dasharray': '0 100' });
+      g.append(track, fill);
+      requestAnimationFrame(() => requestAnimationFrame(() => fill.setAttribute('stroke-dasharray', `${Math.max(fillPct > 0 ? 1.5 : 0, fillPct * 100)} 100`)));
+      if (r.status === 'over') {
+        g.append(s('path', { d: arcPath(C, C, R + SW / 2 + 8, a0, a1), fill: 'none', stroke: 'var(--bad)', 'stroke-width': 5, 'stroke-linecap': 'round', class: 'seg-over' }));
+        const [bx, by] = pt(C, C, R + SW / 2 + 22, (a0 + a1) / 2);
+        g.append(s('circle', { cx: bx, cy: by, r: 9, fill: 'var(--bad)' }), s('text', { x: bx, y: by + 4.5, 'text-anchor': 'middle', style: { fill: '#fff', fontSize: '13px', fontWeight: 800 } }, '!'));
+      } else if (r.status === 'warn') {
+        g.append(s('path', { d: arcPath(C, C, R + SW / 2 + 8, a0, a1), fill: 'none', stroke: 'var(--warn)', 'stroke-width': 3, 'stroke-linecap': 'round', opacity: 0.9 }));
+      }
+      if (len > 0.3 && r.cat.icon) {
+        const [ix, iy] = pt(C, C, R, (a0 + a1) / 2);
+        g.append(s('text', { x: ix, y: iy + 6, 'text-anchor': 'middle', style: { fontSize: '16px', pointerEvents: 'none' } }, r.cat.icon));
+      }
+      const act = () => onSelect && onSelect(r.cat.id);
+      g.addEventListener('click', act);
+      g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+      g.addEventListener('mousemove', (e) => showTip(e, [h('b', null, r.cat.name), `${fmtEuro(r.spent)} von ${fmtEuro(r.budget)}`, `${Math.round(r.pct)} % verbraucht`]));
+      g.addEventListener('mouseleave', hideTip);
+      svg.append(g);
+    });
+  }
+  wrap.append(svg, h('div', { class: 'ring-center' }, h('div', { class: 'big num' }, centerTop), h('div', { class: 'pct num', style: { color: centerColor || 'var(--muted)' } }, centerPct)));
+  return wrap;
+}
+
+return { pctAxis, fmtEuroShort, h, s, clear, toast, modal, confirmDialog, field, segmented, swatchPicker, iconPicker, hexA, catBadge, showTip, hideTip, barChart, lineChart, hBars, miniRing, budgetRing };
+})();
+const APP = (() => {
+// ============================================================================
+// app.js – Oberfläche, Seiten und Dialoge
+// ============================================================================
+const L = LOGIC;
+const { openDb, loadAll, writeAll, writePatch, getMeta, setMeta, addSnapshot, listSnapshots, getSnapshot } = DB;
+const { folderSupported, pickFolder, getFolder, forgetFolder, folderPermission, writeFolderBackup } = BACKUP;
+const { h, s, clear, toast, modal, confirmDialog, field, segmented, swatchPicker, iconPicker, hexA, catBadge, barChart, lineChart, hBars, miniRing, budgetRing, pctAxis } = UI;
+const S = {
+  data: L.emptyData(), db: null, page: 'dashboard', month: L.monthOf(L.todayISO()), today: L.todayISO(),
+  selCat: null, statRange: '6', statSel: null, statCat: null, filters: {}, memoryOnly: false,
+  statView: 'trend', cmpA: null, cmpB: null, cmpType: 'expense',
+  meta: {}, folder: null, folderPerm: '', folderError: null, snapshots: [], storage: { persisted: null, usage: null, quota: null }, installPrompt: null, persistAsked: false,
+};
+const root = () => document.getElementById('app');
+const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('finanz-tracker') : null;
+
+// ---------- Zustand ändern ---------------------------------------------------
+/** Schreibt einen Patch atomar in IndexedDB und aktualisiert danach die Ansicht. */
+async function commit(patch, okMsg) {
+  if (L.isEmptyPatch(patch)) return true;
+  try {
+    if (S.db) await writePatch(S.db, patch);
+    S.data = L.applyPatch(S.data, patch);
+    if (channel) channel.postMessage('changed');
+    render();
+    if (okMsg) toast(okMsg);
+    scheduleFolderBackup();
+    if (!S.persistAsked) { S.persistAsked = true; refreshStorage(true); }
+    return true;
+  } catch (e) {
+    toast('Speichern fehlgeschlagen: ' + (e && e.message ? e.message : 'Unbekannter Fehler') + ' – es wurde nichts geändert.', 'bad');
+    return false;
+  }
+}
+async function housekeeping() {
+  S.today = L.todayISO();
+  const p1 = L.ensureRecurringPatch(S.data, S.today);
+  const d1 = L.applyPatch(S.data, p1);
+  const p2 = L.ensureBudgetRecordsPatch(d1, S.today);
+  const patch = L.mergePatch(p1, p2);
+  if (!L.isEmptyPatch(patch)) {
+    try { if (S.db) await writePatch(S.db, patch); S.data = L.applyPatch(S.data, patch); } catch (e) { toast('Hinweis: ' + e.message, 'bad'); }
+  }
+  if (S.db && L.hasRealData(S.data) && S.meta.lastSnapshotDay !== S.today) {
+    if (await snapshot('Tägliche Sicherung')) await setMetaSafe('lastSnapshotDay', S.today);
+  }
+}
+// ---------- Langzeit-Sicherung ----------------------------------------------
+const BACKUP_REMINDER_DAYS = 14;
+async function setMetaSafe(key, value) {
+  S.meta[key] = value;
+  if (S.db) { try { await setMeta(S.db, key, value); } catch { /* nicht kritisch */ } }
+}
+/** Sicherungskopie innerhalb der Datenbank (schützt vor Bedienfehlern, Import-Pannen, Fehllöschungen). */
+async function snapshot(reason) {
+  if (!S.db) return false;
+  try { await addSnapshot(S.db, reason, L.toBackupJson(S.data), L.dataCounts(S.data)); S.snapshots = await listSnapshots(S.db); return true; } catch { return false; }
+}
+const backupAgeDays = () => (S.meta.lastBackupAt ? (Date.now() - Date.parse(S.meta.lastBackupAt)) / 86400000 : Infinity);
+const backupNeeded = () => L.hasRealData(S.data) && backupAgeDays() > BACKUP_REMINDER_DAYS;
+const fmtDateTime = (iso) => { const d = new Date(iso); return `${L.fmtDate(L.todayISO(d))}, ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} Uhr`; };
+const settingsVisible = () => S.page === 'settings' && !document.querySelector('.overlay');
+const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+
+async function downloadBackup() {
+  downloadFile(`finanz-backup-${L.todayISO()}.json`, L.toBackupJson(S.data), 'application/json');
+  await setMetaSafe('lastBackupAt', new Date().toISOString());
+  toast('Backup heruntergeladen. Bewahre die Datei an einem sicheren Ort auf (z. B. Cloud-Ordner oder USB-Stick).');
+  if (S.page === 'dashboard' || settingsVisible()) render();
+}
+
+let backupTimer = null;
+function scheduleFolderBackup() { if (!S.folder) return; clearTimeout(backupTimer); backupTimer = setTimeout(() => runFolderBackup(), 2500); }
+/** request=true darf nur aus einem Klick heraus aufgerufen werden (Browser fragt dann nach Zugriff). */
+async function runFolderBackup({ request = false, quiet = true } = {}) {
+  if (!S.folder) return false;
+  S.folderPerm = await folderPermission(S.folder, request);
+  if (S.folderPerm !== 'granted') { if (settingsVisible() || S.page === 'dashboard') render(); return false; }
+  try {
+    await writeFolderBackup(S.folder, L.toBackupJson(S.data), L.todayISO());
+    S.folderError = null; await setMetaSafe('lastBackupAt', new Date().toISOString());
+    if (!quiet) toast(`Backup im Ordner „${S.folder.name}“ gespeichert.`);
+    if (settingsVisible()) render();
+    return true;
+  } catch (e) {
+    S.folderError = e && e.message ? e.message : 'Unbekannter Fehler';
+    toast('Automatisches Backup fehlgeschlagen: ' + S.folderError, 'bad'); if (settingsVisible()) render();
+    return false;
+  }
+}
+async function chooseFolder() {
+  try {
+    const handle = await pickFolder(S.db);
+    S.folder = handle; S.folderPerm = await folderPermission(handle, true);
+    await runFolderBackup({ request: true, quiet: false });
+    render();
+  } catch (e) { if (!e || e.name !== 'AbortError') toast('Ordner konnte nicht gewählt werden: ' + (e && e.message ? e.message : e), 'bad'); }
+}
+async function disconnectFolder() {
+  if (!(await confirmDialog({ title: 'Backup-Ordner trennen?', text: 'Es werden keine automatischen Backups mehr geschrieben. Bereits gespeicherte Dateien im Ordner bleiben erhalten.', confirmLabel: 'Trennen', danger: false }))) return;
+  await forgetFolder(S.db); S.folder = null; S.folderPerm = ''; render();
+}
+async function refreshStorage(request = false) {
+  if (!navigator.storage) return;
+  try {
+    let p = navigator.storage.persisted ? await navigator.storage.persisted() : false;
+    if (!p && request && navigator.storage.persist) p = await navigator.storage.persist();
+    S.storage.persisted = p;
+    if (navigator.storage.estimate) { const e = await navigator.storage.estimate(); S.storage.usage = e.usage; S.storage.quota = e.quota; }
+  } catch { /* ignorieren */ }
+  if (settingsVisible()) render();
+}
+async function loadSettingsData() {
+  if (S.db) { try { S.snapshots = await listSnapshots(S.db); } catch { /* ignorieren */ } }
+  if (S.folder) S.folderPerm = await folderPermission(S.folder, false);
+  await refreshStorage(false);
+  if (settingsVisible()) render();
+}
+/** Ersetzt ALLE Daten (Import, Wiederherstellung) – vorher wird automatisch ein Snapshot angelegt. */
+async function replaceAllData(data, reason) {
+  await snapshot(reason);
+  if (S.db) await writeAll(S.db, data);
+  S.data = data; S.filters = {};
+  await housekeeping();
+  if (channel) channel.postMessage('changed');
+  applyTheme(); render(); scheduleFolderBackup();
+}
+async function restoreSnapshot(snap) {
+  const row = S.db ? await getSnapshot(S.db, snap.id) : null;
+  const r = row ? L.parseBackup(row.json) : { error: 'Snapshot nicht gefunden.' };
+  if (r.error) return toast(r.error, 'bad');
+  const ok = await confirmDialog({ title: 'Snapshot wiederherstellen?', confirmLabel: 'Wiederherstellen', danger: false,
+    text: `Stand vom ${fmtDateTime(snap.at)} (${r.data.transactions.length} Buchungen). Die aktuellen Daten werden ersetzt – davor wird automatisch ein neuer Snapshot angelegt, du kannst also zurück.` });
+  if (!ok) return;
+  try { await replaceAllData(r.data, 'Vor Wiederherstellung'); toast('Snapshot wiederhergestellt.'); } catch (e) { toast('Wiederherstellung fehlgeschlagen: ' + e.message, 'bad'); }
+}
+function backupBanner() {
+  if (S.folder && S.folderPerm !== 'granted') {
+    return h('div', { class: 'note warn', style: { marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' } },
+      h('span', null, `🔐 Der Browser braucht deine Bestätigung, damit das automatische Backup in „${S.folder.name}“ weiterlaufen darf.`),
+      h('button', { class: 'btn sm primary', type: 'button', onClick: () => runFolderBackup({ request: true, quiet: false }) }, 'Zugriff erlauben'));
+  }
+  if (!backupNeeded()) return null;
+  const days = backupAgeDays();
+  return h('div', { class: 'note warn', style: { marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' } },
+    h('span', null, '💾 ', days === Infinity ? 'Du hast noch kein Backup deiner Daten.' : `Dein letztes Backup ist ${Math.floor(days)} Tage alt.`, ' Sichere deine Daten, damit nichts verloren geht.'),
+    h('span', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
+      h('button', { class: 'btn sm primary', type: 'button', onClick: downloadBackup }, 'Backup jetzt laden'),
+      h('button', { class: 'btn sm', type: 'button', onClick: () => go('settings') }, 'Automatisch sichern …')));
+}
+
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', S.data.settings.theme || 'system');
+}
+
+// ---------- Navigation -------------------------------------------------------
+const NAV = [
+  ['dashboard', 'Übersicht', '🏠'], ['income', 'Einnahmen', '💶'], ['expense', 'Ausgaben', '🧾'], ['budgets', 'Budgets', '🎯'],
+  ['goals', 'Sparziele', '🐷'], ['stats', 'Statistik', '📈'], ['history', 'Verlauf', '🗂️'], ['categories', 'Kategorien verwalten', '🏷️'], ['settings', 'Einstellungen', '⚙️'],
+];
+function go(page) { S.page = page; S.selCat = null; render(); window.scrollTo({ top: 0 }); try { history.replaceState(null, '', '#' + page); } catch { /* file:// o. Ä. */ } if (page === 'settings') loadSettingsData(); }
+
+function moreMenu() {
+  modal((close) => h('div', null, h('h2', null, 'Menü'),
+    h('div', { class: 'stack' }, NAV.filter((n) => !['dashboard', 'history', 'budgets'].includes(n[0])).map(([k, label, ico]) =>
+      h('button', { class: 'btn', type: 'button', style: { justifyContent: 'flex-start' }, onClick: () => { close(); go(k); } }, h('span', { class: 'nav-ico' }, ico), label))),
+    h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onClick: () => close() }, 'Schließen'))));
+}
+function quickAdd() {
+  modal((close) => h('div', null, h('h2', null, 'Neue Buchung'),
+    h('div', { class: 'stack' },
+      h('button', { class: 'btn income big', type: 'button', onClick: () => { close(); txDialog({ type: 'income' }); } }, '+ Einnahme'),
+      h('button', { class: 'btn expense big', type: 'button', onClick: () => { close(); txDialog({ type: 'expense' }); } }, '+ Ausgabe'))));
+}
+
+// ---------- Gemeinsame Bausteine --------------------------------------------
+const money = (c, cls = '') => h('span', { class: 'num ' + cls }, L.fmtEuro(c));
+const catById = (id) => S.data.categories.find((c) => c.id === id) || null;
+const catView = (id) => catById(id) || { id: '', name: L.UNCAT_NAME, color: L.UNCAT_COLOR, icon: '', type: 'expense' };
+const catsOf = (type) => S.data.categories.filter((c) => c.type === type).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+function monthPicker() {
+  const jump = () => modal((close) => {
+    const inp = h('input', { class: 'input', type: 'month', value: S.month, 'data-autofocus': '1' });
+    return h('div', null, h('h2', null, 'Monat wählen'), field('Monat', inp),
+      h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onClick: () => close() }, 'Abbrechen'),
+        h('button', { class: 'btn primary', type: 'button', onClick: () => { if (L.isMonthKey(inp.value)) { S.month = inp.value; close(); render(); } else toast('Bitte einen gültigen Monat wählen.', 'bad'); } }, 'Übernehmen')));
+  });
+  const cur = L.monthOf(S.today);
+  return h('div', { class: 'monthpick' },
+    h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Vorheriger Monat', onClick: () => { S.month = L.addMonths(S.month, -1); S.selCat = null; render(); } }, '‹'),
+    h('button', { class: 'lab', type: 'button', title: 'Monat auswählen', onClick: jump }, L.monthLabel(S.month), S.month > cur ? ' ·geplant' : ''),
+    h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Nächster Monat', onClick: () => { S.month = L.addMonths(S.month, 1); S.selCat = null; render(); } }, '›'),
+    S.month !== cur ? h('button', { class: 'btn sm ghost', type: 'button', onClick: () => { S.month = cur; render(); } }, 'Heute') : null);
+}
+const addButtons = () => h('div', { class: 'actions' },
+  h('button', { class: 'btn income', type: 'button', onClick: () => txDialog({ type: 'income' }) }, '+ Einnahme'),
+  h('button', { class: 'btn expense', type: 'button', onClick: () => txDialog({ type: 'expense' }) }, '+ Ausgabe'));
+const pageHead = (title, ...right) => h('div', { class: 'page-head' }, h('h1', null, title), h('div', { class: 'actions' }, ...right));
+const emptyState = (ico, text, action) => h('div', { class: 'empty' }, h('div', { class: 'em-ico' }, ico), h('div', null, text), action ? h('div', { style: { marginTop: '12px' } }, action) : null);
+const statusTag = (st) => ({ ok: h('span', { class: 'tag ok' }, '● im Rahmen'), warn: h('span', { class: 'tag warn' }, '▲ über 80 %'), full: h('span', { class: 'tag warn' }, '● ausgeschöpft'), over: h('span', { class: 'tag bad' }, '! überschritten') }[st]);
+const statusColor = (st) => ({ ok: 'var(--ok)', warn: 'var(--warn)', full: 'var(--warn)', over: 'var(--bad)' }[st]);
+
+// ---------- Transaktions-Dialog ---------------------------------------------
+function txDialog(init = {}) {
+  const editing = init.id ? S.data.transactions.find((t) => t.id === init.id) : null;
+  const rule = editing && editing.ruleId ? S.data.rules.find((r) => r.id === editing.ruleId) : null;
+  const m = {
+    type: editing ? editing.type : init.type || 'expense', title: editing ? editing.title : '', amount: editing ? L.centsToInput(editing.amountCents) : '',
+    date: editing ? editing.date : (L.monthOf(S.today) === S.month ? S.today : `${S.month}-01`), categoryId: editing ? editing.categoryId : init.categoryId || null,
+    description: editing ? editing.description : '', paymentMethod: editing ? editing.paymentMethod : '', recurring: !!rule, applyToFuture: false,
+  };
+  modal((close) => {
+    const box = h('div');
+    const errBox = h('div');
+    const draw = () => {
+      clear(box);
+      const title = h('input', { class: 'input', value: m.title, maxlength: 120, placeholder: m.type === 'income' ? 'z. B. Gehalt' : 'z. B. REWE', 'data-autofocus': '1', onInput: (e) => { m.title = e.target.value; } });
+      const amount = h('input', { class: 'input num', value: m.amount, inputmode: 'decimal', placeholder: '0,00', onInput: (e) => { m.amount = e.target.value; } });
+      const date = h('input', { class: 'input', type: 'date', value: m.date, onInput: (e) => { m.date = e.target.value; } });
+      const chips = h('div', { class: 'swatches', role: 'group', 'aria-label': 'Kategorie' });
+      const chip = (id, name, color, icon) => h('button', { type: 'button', class: 'btn sm', 'aria-pressed': String(m.categoryId === id), style: { background: m.categoryId === id ? hexA(color, 0.18) : '', borderColor: m.categoryId === id ? color : '' }, onClick: () => { m.categoryId = id; draw(); } },
+        icon ? h('span', null, icon) : h('i', { class: 'dot', style: { background: color, width: '10px', height: '10px' } }), name);
+      for (const c of catsOf(m.type)) chips.append(chip(c.id, c.name, c.color, c.icon));
+      chips.append(chip(null, 'Ohne Kategorie', L.UNCAT_COLOR, ''));
+      chips.append(h('button', { type: 'button', class: 'btn sm ghost', onClick: () => categoryDialog({ type: m.type }, (cat) => { m.categoryId = cat.id; draw(); }) }, '+ Neue Kategorie'));
+      box.append(h('div', { class: 'form-grid' },
+        !editing ? h('div', { class: 'full' }, segmented([{ value: 'expense', label: 'Ausgabe' }, { value: 'income', label: 'Einnahme' }], m.type, (v) => { m.type = v; m.categoryId = null; draw(); })) : null,
+        h('div', { class: 'full' }, field('Bezeichnung', title)),
+        field('Betrag in €', amount), field('Datum', date),
+        h('div', { class: 'full' }, field('Kategorie', chips)),
+        m.type === 'expense' ? h('div', { class: 'full' }, field('Zahlungsart (optional)', h('select', { class: 'input', onChange: (e) => { m.paymentMethod = e.target.value; } },
+          h('option', { value: '' }, '– keine Angabe –'), ...L.PAYMENT_METHODS.map((p) => h('option', { value: p, selected: m.paymentMethod === p }, p))))) : null,
+        h('div', { class: 'full' }, field('Beschreibung (optional)', h('textarea', { class: 'input', maxlength: 500, onInput: (e) => { m.description = e.target.value; } }, m.description))),
+        h('div', { class: 'full stack' },
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: m.recurring, onChange: (e) => { m.recurring = e.target.checked; draw(); } }),
+            h('span', null, m.type === 'income' ? 'Wiederkehrende Einnahme' : 'Wiederkehrende Ausgabe', h('div', { class: 'tiny muted', style: { fontWeight: 500 } }, rule ? 'Teil einer monatlichen Serie.' : 'Wird jeden Monat am selben Tag automatisch vorgemerkt (bis 12 Monate im Voraus).'))),
+          rule && m.recurring ? h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: m.applyToFuture, onChange: (e) => { m.applyToFuture = e.target.checked; } }), h('span', null, 'Änderungen auch auf alle folgenden Monate anwenden')) : null)));
+    };
+    draw();
+    const save = async () => {
+      const cents = L.parseEuro(m.amount);
+      const form = { id: editing ? editing.id : undefined, type: m.type, title: m.title, amountCents: cents, date: m.date, categoryId: m.categoryId, description: m.description, paymentMethod: m.paymentMethod, recurring: m.recurring, applyToFuture: m.applyToFuture };
+      clear(errBox);
+      if (cents == null) { errBox.append(h('div', { class: 'err' }, 'Bitte einen gültigen Betrag eingeben, z. B. 12,50.')); return; }
+      const r = L.saveTransaction(S.data, form, S.today);
+      if (r.error) { errBox.append(h('div', { class: 'err', role: 'alert' }, r.error)); return; }
+      if (await commit(r.patch, editing ? 'Änderungen gespeichert.' : m.type === 'income' ? 'Einnahme gespeichert.' : 'Ausgabe gespeichert.')) close();
+    };
+    return h('form', { onSubmit: (e) => { e.preventDefault(); save(); } },
+      h('h2', null, editing ? (m.type === 'income' ? 'Einnahme bearbeiten' : 'Ausgabe bearbeiten') : m.type === 'income' ? 'Neue Einnahme' : 'Neue Ausgabe'),
+      box, h('div', { style: { marginTop: '14px' } }, errBox),
+      h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onClick: () => close() }, 'Abbrechen'), h('button', { class: 'btn primary', type: 'submit' }, 'Speichern')));
+  });
+}
+
+async function deleteTx(t) {
+  if (t.ruleId && S.data.rules.some((r) => r.id === t.ruleId)) {
+    modal((close) => h('div', null, h('h2', null, 'Wiederkehrende Buchung löschen'),
+      h('p', { style: { marginTop: 0 } }, `„${t.title}“ (${L.fmtDate(t.date)}) ist Teil einer monatlichen Serie.`),
+      h('div', { class: 'stack' },
+        h('button', { class: 'btn', type: 'button', onClick: async () => { close(); const r = L.deleteTransaction(S.data, t.id, 'one'); await commit(r.patch, 'Buchung gelöscht.'); } }, 'Nur diese Buchung löschen'),
+        h('button', { class: 'btn danger', type: 'button', onClick: async () => { close(); const r = L.deleteTransaction(S.data, t.id, 'future'); await commit(r.patch, 'Serie ab diesem Monat beendet.'); } }, 'Diese und alle folgenden löschen')),
+      h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onClick: () => close() }, 'Abbrechen'))));
+    return;
+  }
+  if (await confirmDialog({ title: 'Buchung löschen?', text: `„${t.title}“ über ${L.fmtEuro(t.amountCents)} vom ${L.fmtDate(t.date)} wird endgültig gelöscht.` })) {
+    const r = L.deleteTransaction(S.data, t.id); await commit(r.patch, 'Buchung gelöscht.');
+  }
+}
+
+function txRow(t, showCat = true) {
+  const c = catView(t.categoryId);
+  const future = t.date > S.today;
+  return h('div', { class: 'row' },
+    catBadge(c, 40),
+    h('div', { class: 'grow' }, h('div', { class: 'title' }, t.title),
+      h('div', { class: 'tiny muted', style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
+        [L.fmtDate(t.date), showCat ? c.name : null, t.paymentMethod || null, t.ruleId ? '🔁 monatlich' : null].filter(Boolean).join(' · '), future ? ' · geplant' : '')),
+    h('div', { class: 'amount num ' + (t.type === 'income' ? 'pos' : '') }, (t.type === 'income' ? '+' : '−') + L.fmtEuro(t.amountCents)),
+    h('div', { class: 'acts' },
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Bearbeiten', title: 'Bearbeiten', onClick: () => txDialog({ id: t.id }) }, '✏️'),
+      h('button', { class: 'icon-btn del', type: 'button', 'aria-label': 'Löschen', title: 'Löschen', onClick: () => deleteTx(t) }, '🗑️')));
+}
+const byDateDesc = (a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.title.localeCompare(b.title, 'de'));
+
+// ---------- Kategorie-Dialog -------------------------------------------------
+function categoryDialog(init = {}, onSaved) {
+  const editing = init.id ? catById(init.id) : null;
+  const m = {
+    name: editing ? editing.name : '', type: editing ? editing.type : init.type || 'expense',
+    color: editing ? editing.color : L.PALETTE[(S.data.categories.length * 3) % L.PALETTE.length], icon: editing ? editing.icon : '',
+    budget: editing && editing.defaultBudgetCents ? L.centsToInput(editing.defaultBudgetCents) : '',
+  };
+  modal((close) => {
+    const errBox = h('div'); const body = h('div', { class: 'stack' });
+    const preview = h('div', { class: 'preview' });
+    const drawPreview = () => {
+      clear(preview).append(catBadge({ color: m.color, icon: m.icon }, 44), h('div', null, h('div', { class: 'cat-name' }, m.name.trim() || 'Name der Kategorie'),
+        h('div', { class: 'cat-meta' }, m.type === 'income' ? 'Einnahmenkategorie' : 'Ausgabenkategorie' + (m.budget && L.parseEuro(m.budget) ? ' · ' + L.fmtEuroShort(L.parseEuro(m.budget)) + ' / Monat' : ''))));
+    };
+    const draw = () => {
+      clear(body);
+      body.append(preview,
+        field('Name', h('input', { class: 'input', value: m.name, maxlength: 30, placeholder: 'z. B. Haustiere', 'data-autofocus': '1', onInput: (e) => { m.name = e.target.value; drawPreview(); } })),
+        field('Art', editing ? h('div', null, h('span', { class: 'tag mute' }, m.type === 'income' ? 'Einnahme' : 'Ausgabe'), h('span', { class: 'tiny muted' }, '  (kann nachträglich nicht geändert werden)'))
+          : segmented([{ value: 'expense', label: 'Ausgabe' }, { value: 'income', label: 'Einnahme' }], m.type, (v) => { m.type = v; draw(); })),
+        field('Farbe', swatchPicker(L.PALETTE, m.color, (c) => { m.color = c; drawPreview(); })),
+        field('Symbol (optional)', iconPicker(L.ICONS, m.icon, (i) => { m.icon = i; drawPreview(); })),
+        m.type === 'expense' ? field('Standard-Monatsbudget in € (optional)', h('input', { class: 'input num', value: m.budget, inputmode: 'decimal', placeholder: 'z. B. 150', onInput: (e) => { m.budget = e.target.value; drawPreview(); } }),
+          'Gilt ab dem aktuellen Monat. Vergangene Monate bleiben unverändert.') : null);
+      drawPreview();
+    };
+    draw();
+    const save = async () => {
+      clear(errBox);
+      let budgetCents = null;
+      if (m.type === 'expense' && m.budget.trim()) { budgetCents = L.parseEuro(m.budget); if (budgetCents == null) { errBox.append(h('div', { class: 'err' }, 'Bitte ein gültiges Budget eingeben, z. B. 150 – oder das Feld leer lassen.')); return; } }
+      const r = L.saveCategory(S.data, { id: editing ? editing.id : undefined, name: m.name, type: m.type, color: m.color, icon: m.icon, budgetCents }, S.today);
+      if (r.error) { errBox.append(h('div', { class: 'err', role: 'alert' }, r.error)); return; }
+      if (await commit(r.patch, editing ? 'Kategorie aktualisiert.' : 'Kategorie hinzugefügt.')) { close(); if (onSaved) onSaved(r.category); }
+    };
+    return h('form', { onSubmit: (e) => { e.preventDefault(); save(); } }, h('h2', null, editing ? 'Kategorie bearbeiten' : 'Neue Kategorie'), body, h('div', { style: { marginTop: '14px' } }, errBox),
+      h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onClick: () => close() }, 'Abbrechen'), h('button', { class: 'btn primary', type: 'submit' }, editing ? 'Speichern' : 'Hinzufügen')));
+  });
+}
+
+/** Sicherer Löschdialog: Standard ist NIE das Löschen von Transaktionen. */
+function deleteCategoryDialog(cat) {
+  const txs = S.data.transactions.filter((t) => t.categoryId === cat.id);
+  const rules = S.data.rules.filter((r) => r.categoryId === cat.id);
+  if (!txs.length && !rules.length) {
+    confirmDialog({ title: 'Kategorie löschen?', text: `„${cat.name}“ ist keiner Buchung zugeordnet und wird entfernt.${L.categoryUsage(S.data, cat.id).budgetMonths ? ' Zugehörige Budgetwerte werden ebenfalls entfernt.' : ''}`, confirmLabel: 'Löschen' })
+      .then(async (ok) => { if (ok) { const r = L.deleteCategory(S.data, cat.id, 'uncategorized'); await commit(r.patch, 'Kategorie gelöscht.'); } });
+    return;
+  }
+  const others = catsOf(cat.type).filter((c) => c.id !== cat.id);
+  const total = txs.reduce((a, t) => a + t.amountCents, 0);
+  const dates = txs.map((t) => t.date).sort();
+  const m = { mode: others.length ? 'reassign' : 'uncategorized', target: others[0] ? others[0].id : '', confirmText: '', ack: false };
+  modal((close) => {
+    const body = h('div', { class: 'stack' }); const errBox = h('div');
+    const draw = () => {
+      clear(body);
+      const opt = (mode, title, text, content, bad) => h('label', { class: 'opt' + (m.mode === mode ? ' on' : '') + (bad && m.mode === mode ? ' bad' : '') },
+        h('input', { type: 'radio', name: 'mode', checked: m.mode === mode, disabled: mode === 'reassign' && !others.length, onChange: () => { m.mode = mode; draw(); } }),
+        h('div', { style: { flex: 1, minWidth: 0 } }, h('div', { style: { fontWeight: 700 } }, title), h('div', { class: 'small muted' }, text), m.mode === mode ? content : null));
+      body.append(
+        h('div', { class: 'note warn' }, h('b', null, `„${cat.name}“ enthält ${txs.length} Buchung${txs.length === 1 ? '' : 'en'}`), ` (zusammen ${L.fmtEuro(total)}${dates.length ? `, ${L.fmtDate(dates[0])} bis ${L.fmtDate(dates[dates.length - 1])}` : ''})${rules.length ? ` und ${rules.length} Dauerauftrag/-aufträge` : ''}. Was soll damit passieren?`),
+        opt('reassign', 'Einer anderen Kategorie zuordnen (empfohlen)', others.length ? 'Alle Buchungen und Budgets wandern in die gewählte Kategorie. Es geht nichts verloren.' : 'Keine andere Kategorie dieser Art vorhanden – lege zuerst eine an.',
+          others.length ? h('select', { class: 'input', style: { marginTop: '10px' }, 'aria-label': 'Zielkategorie', onChange: (e) => { m.target = e.target.value; } }, others.map((c) => h('option', { value: c.id, selected: c.id === m.target }, `${c.icon ? c.icon + ' ' : ''}${c.name}`))) : null),
+        opt('uncategorized', 'Ohne Kategorie weiterführen', 'Die Buchungen bleiben erhalten und erscheinen als „Ohne Kategorie“. Summen und Monatsauswertungen bleiben gleich.'),
+        opt('cascade', 'Kategorie samt Buchungen löschen', 'Alle zugehörigen Buchungen werden unwiderruflich gelöscht. Historische Monatssummen ändern sich dadurch.',
+          h('div', { class: 'stack', style: { marginTop: '10px' } },
+            h('div', { class: 'small' }, `Es werden ${txs.length} Buchung${txs.length === 1 ? '' : 'en'} (${L.fmtEuro(total)}) gelöscht. `, h('button', { type: 'button', class: 'btn sm', onClick: (e) => { e.preventDefault(); downloadBackup(); } }, '⬇ Vorher Backup laden')),
+            h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: m.ack, onChange: (e) => { m.ack = e.target.checked; sync(); } }), h('span', null, 'Ich weiß, dass diese Buchungen danach weg sind.')),
+            field('Zur Bestätigung „LÖSCHEN“ eingeben', h('input', { class: 'input', value: m.confirmText, autocomplete: 'off', onInput: (e) => { m.confirmText = e.target.value; sync(); } }))), true));
+    };
+    const go = h('button', { class: 'btn primary', type: 'submit' }, 'Kategorie löschen');
+    const sync = () => {
+      go.disabled = m.mode === 'cascade' && !(m.ack && m.confirmText.trim().toUpperCase() === 'LÖSCHEN');
+      go.className = 'btn ' + (m.mode === 'cascade' ? 'danger' : 'primary'); go.textContent = m.mode === 'cascade' ? 'Kategorie und Buchungen löschen' : 'Kategorie löschen';
+    };
+    const draw2 = () => { draw(); sync(); };
+    draw2();
+    const origDraw = draw;
+    void origDraw;
+    body.addEventListener('change', () => sync());
+    return h('form', { onSubmit: async (e) => {
+      e.preventDefault(); clear(errBox);
+      if (m.mode === 'cascade' && !(m.ack && m.confirmText.trim().toUpperCase() === 'LÖSCHEN')) return;
+      const r = L.deleteCategory(S.data, cat.id, m.mode, m.target);
+      if (r.error) { errBox.append(h('div', { class: 'err' }, r.error)); return; }
+      if (m.mode === 'cascade') await snapshot(`Vor Löschen von „${cat.name}“ samt Buchungen`);
+      if (await commit(r.patch, m.mode === 'reassign' ? 'Kategorie gelöscht, Buchungen umgeordnet.' : m.mode === 'uncategorized' ? 'Kategorie gelöscht, Buchungen bleiben ohne Kategorie erhalten.' : 'Kategorie und Buchungen gelöscht.')) close();
+    } }, h('h2', null, `„${cat.name}“ löschen`), body, h('div', { style: { marginTop: '14px' } }, errBox),
+      h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', 'data-autofocus': '1', onClick: () => close() }, 'Abbrechen'), go));
+  });
+}
+
+function downloadFile(name, content, type) {
+  const blob = new Blob([content], { type: type + ';charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = h('a', { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+// ---------- Seite: Dashboard -------------------------------------------------
+function pageDashboard() {
+  const sum = L.monthSummary(S.data, S.month, S.today);
+  const b = sum.budget;
+  const kpi = (label, value, sub, cls = '', ico = '') => h('div', { class: 'card kpi' }, h('div', { class: 'label' }, ico, label), h('div', { class: 'value num ' + cls }, value), h('div', { class: 'sub' }, sub));
+  const hasBudget = b.rows.length > 0;
+  const over = b.rows.filter((r) => r.status === 'over'), warn = b.rows.filter((r) => r.status === 'warn' || r.status === 'full');
+  const totalSt = hasBudget ? L.budgetStatus(b.spent, b.total) : null;
+  const pctColor = !hasBudget ? 'var(--muted)' : totalSt === 'over' ? 'var(--bad)' : totalSt === 'warn' || totalSt === 'full' ? 'var(--warn)' : 'var(--text)';
+  const sel = b.rows.find((r) => r.cat.id === S.selCat) || null;
+  const detail = sel ? (() => {
+    const tx = L.txOfMonth(S.data, S.month).filter((t) => t.type === 'expense' && t.categoryId === sel.cat.id).sort(byDateDesc);
+    return h('div', { class: 'detail' },
+      h('div', { class: 'card-head' }, h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center' } }, catBadge(sel.cat, 40), h('div', null, h('h3', null, sel.cat.name), h('div', { class: 'small muted' }, `Monatsbudget ${L.fmtEuroShort(sel.budget)}`))), h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Details schließen', onClick: () => { S.selCat = null; render(); } }, '✕')),
+      h('div', { class: 'bar thick' }, h('i', { style: { background: statusColor(sel.status), width: Math.min(100, sel.pct) + '%' } })),
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', margin: '10px 0' } },
+        h('span', null, 'Ausgegeben: ', h('b', null, money(sel.spent))), h('span', null, sel.remaining >= 0 ? 'Noch frei: ' : 'Überschritten um: ', h('b', { class: sel.remaining < 0 ? 'neg' : '' }, money(Math.abs(sel.remaining)))), statusTag(sel.status)),
+      tx.length ? h('div', { class: 'list' }, tx.slice(0, 6).map((t) => txRow(t, false))) : h('div', { class: 'muted small' }, 'In diesem Monat keine Ausgaben in dieser Kategorie.'),
+      tx.length > 6 ? h('div', { class: 'tiny muted', style: { marginTop: '6px' } }, `… und ${tx.length - 6} weitere im Verlauf.`) : null);
+  })() : null;
+  const legendRows = [h('div', { class: 'legend-row head' }, h('span'), h('span', null, 'Kategorie'), h('span', { class: 'r' }, 'Ausgegeben'), h('span', { class: 'r hb' }, 'Budget'), h('span', { class: 'r' }, 'Übrig'))];
+  for (const r of b.rows) legendRows.push(h('button', { type: 'button', class: 'legend-row' + (S.selCat === r.cat.id ? ' sel' : ''), onClick: () => { S.selCat = S.selCat === r.cat.id ? null : r.cat.id; render(); } },
+    h('i', { class: 'dot', style: { background: r.cat.color } }), h('span', { style: { fontWeight: 650, overflow: 'hidden', textOverflow: 'ellipsis' } }, r.cat.icon ? r.cat.icon + ' ' : '', r.cat.name),
+    h('span', { class: 'r num' }, L.fmtEuroShort(r.spent)), h('span', { class: 'r num hb muted' }, L.fmtEuroShort(r.budget)), h('span', { class: 'r num ' + (r.remaining < 0 ? 'neg' : ''), style: { fontWeight: 650 } }, (r.remaining < 0 ? '−' : '') + L.fmtEuroShort(Math.abs(r.remaining)))));
+  const ringCard = h('div', { class: 'card' },
+    h('div', { class: 'card-head' }, h('h2', null, 'Budgetkreis'), hasBudget ? h('span', { class: 'tag ' + (over.length ? 'bad' : warn.length ? 'warn' : 'ok') }, over.length ? `${over.length} überschritten` : warn.length ? `${warn.length} fast voll` : 'alles im Rahmen') : null),
+    hasBudget ? [budgetRing(b.rows, { selectedId: S.selCat, onSelect: (id) => { S.selCat = S.selCat === id ? null : id; render(); },
+      centerTop: `${L.fmtEuroShort(b.spent)} / ${L.fmtEuroShort(b.total)}`, centerPct: `${L.fmtPct(b.pct, b.pct < 10 ? 1 : 0)} verbraucht`, centerColor: pctColor }),
+      h('div', { class: 'legend' }, legendRows), detail]
+      : emptyState('🎯', 'Für diesen Monat sind noch keine Budgets festgelegt.', h('button', { class: 'btn primary', type: 'button', onClick: () => go('budgets') }, 'Budgets planen')),
+    b.unbudgeted > 0 ? h('div', { class: 'note', style: { marginTop: '12px' } }, `Zusätzlich ${L.fmtEuro(b.unbudgeted)} in Kategorien ohne Budget (nicht im Kreis enthalten): `, b.others.map((o) => o.cat.name).join(', '), '.') : null);
+  const recent = [...L.txOfMonth(S.data, S.month)].sort(byDateDesc).slice(0, 7);
+  const top = [...b.rows].sort((x, y) => y.spent - x.spent).slice(0, 5);
+  const banner = over.length ? h('div', { class: 'note bad' }, h('b', null, 'Budget überschritten: '), over.map((r) => `${r.cat.name} (+${L.fmtEuro(-r.remaining)})`).join(', '))
+    : hasBudget ? h('div', { class: 'note ' + (warn.length ? 'warn' : 'ok') }, warn.length ? [h('b', null, 'Achtung: '), warn.map((r) => `${r.cat.name} (${Math.round(r.pct)} %)`).join(', '), ' – fast ausgeschöpft.'] : [h('b', null, '✓ Alles im Rahmen. '), `Du liegst bei ${L.fmtPct(b.pct)} deines Gesamtbudgets.`]) : null;
+  return h('div', null,
+    pageHead('Übersicht', monthPicker(), addButtons()),
+    L.hasSampleData(S.data) ? h('div', { class: 'note', style: { marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' } }, h('span', null, '👋 Du siehst Beispieldaten. Sie sind markiert und lassen sich jederzeit komplett löschen.'), h('button', { class: 'btn sm', type: 'button', onClick: deleteSample }, 'Beispieldaten löschen')) : null,
+    S.memoryOnly ? h('div', { class: 'note bad', style: { marginBottom: '16px' } }, '⚠ Dieser Browser erlaubt keine dauerhafte Speicherung. Daten gehen beim Schließen verloren – exportiere regelmäßig ein Backup.') : null,
+    backupBanner(),
+    h('div', { class: 'grid g4' },
+      kpi('Einnahmen', money(sum.income), sum.income ? 'im ' + L.monthLabel(S.month).split(' ')[0] : 'noch keine', 'pos', '↗ '),
+      kpi('Ausgaben', money(sum.expense), sum.plannedExpense ? `davon ${L.fmtEuro(sum.plannedExpense)} noch geplant` : 'bisher', '', '↘ '),
+      kpi('Verbleibend', (sum.balance < 0 ? '−' : '') + L.fmtEuro(Math.abs(sum.balance)), 'Einnahmen − Ausgaben', sum.balance < 0 ? 'neg' : 'pos', '＝ '),
+      kpi('Sparquote', sum.savingsRate == null ? '–' : L.fmtPct(sum.savingsRate, 1), sum.savingsRate == null ? 'ohne Einnahmen nicht berechenbar' : 'vom Einkommen übrig', sum.savingsRate != null && sum.savingsRate < 0 ? 'neg' : '', '🐷 ')),
+    h('div', { style: { height: '16px' } }),
+    h('div', { class: 'grid g-hero' }, ringCard,
+      h('div', { class: 'grid' },
+        h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', null, 'Budget')), banner,
+          h('div', { class: 'grid g3', style: { marginTop: '14px' } },
+            h('div', { class: 'kpi' }, h('div', { class: 'label' }, 'Gesamtbudget'), h('div', { class: 'value num', style: { fontSize: '20px' } }, hasBudget ? L.fmtEuroShort(b.total) : '–')),
+            h('div', { class: 'kpi' }, h('div', { class: 'label' }, 'Verbraucht'), h('div', { class: 'value num', style: { fontSize: '20px', color: pctColor } }, b.pct == null ? '–' : L.fmtPct(b.pct, 1))),
+            h('div', { class: 'kpi' }, h('div', { class: 'label' }, 'Noch verfügbar'), h('div', { class: 'value num ' + (b.available < 0 ? 'neg' : ''), style: { fontSize: '20px' } }, hasBudget ? (b.available < 0 ? '−' : '') + L.fmtEuroShort(Math.abs(b.available)) : '–')))),
+        h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', null, 'Wichtigste Budgetkategorien'), h('button', { class: 'btn sm ghost', type: 'button', onClick: () => go('budgets') }, 'Alle')),
+          top.length ? h('div', { class: 'stack' }, top.map((r) => h('div', null,
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '5px' } }, h('span', { style: { fontWeight: 650 } }, (r.cat.icon ? r.cat.icon + ' ' : '') + r.cat.name), h('span', { class: 'num small muted' }, `${L.fmtEuroShort(r.spent)} / ${L.fmtEuroShort(r.budget)}`)),
+            h('div', { class: 'bar' }, h('i', { 'data-w': Math.min(100, r.pct), style: { background: r.status === 'ok' ? r.cat.color : statusColor(r.status) } }))))) : h('div', { class: 'muted small' }, 'Noch keine Budgetkategorien.')),
+        S.data.goals.length ? h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', null, 'Sparziele'), h('button', { class: 'btn sm ghost', type: 'button', onClick: () => go('goals') }, 'Alle')),
+          h('div', { class: 'stack' }, [...S.data.goals].sort((x, y) => (y.savedCents / y.targetCents) - (x.savedCents / x.targetCents)).slice(0, 3).map((g) => { const pr = L.goalProgress(g, S.today);
+            return h('div', null, h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '5px' } }, h('span', { style: { fontWeight: 650 } }, g.name), h('span', { class: 'num small muted' }, `${L.fmtEuroShort(g.savedCents)} / ${L.fmtEuroShort(g.targetCents)}`)),
+              h('div', { class: 'bar' }, h('i', { 'data-w': pr.pct, style: { background: g.color } }))); }))) : null,
+        h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', null, 'Letzte Transaktionen'), h('button', { class: 'btn sm ghost', type: 'button', onClick: () => go('history') }, 'Alle')),
+          recent.length ? h('div', { class: 'list' }, recent.map((t) => txRow(t))) : emptyState('🧾', 'In diesem Monat gibt es noch keine Buchungen.')))));
+}
+async function deleteSample() {
+  if (await confirmDialog({ title: 'Beispieldaten löschen?', text: 'Alle als Beispiel markierten Buchungen, Serien, Sparziele und Budgetmonate werden entfernt. Deine Kategorien und selbst eingetragenen Daten bleiben erhalten.', confirmLabel: 'Beispieldaten löschen' })) {
+    await commit(L.deleteSamplePatch(S.data), 'Beispieldaten gelöscht. Viel Erfolg mit deinen eigenen Daten!');
+  }
+}
+
+// ---------- Seite: Transaktionen (Einnahmen / Ausgaben / Verlauf) ----------
+function pageTransactions(kind) {
+  const f = (S.filters[kind] = S.filters[kind] || { q: '', cat: '', min: '', max: '', from: '', to: '', type: '', sort: 'date-desc', all: false, month: '' });
+  const fixed = kind === 'income' ? 'income' : kind === 'expense' ? 'expense' : null;
+  const type = fixed || f.type;
+  let list = S.data.transactions.filter((t) => !type || t.type === type);
+  const scopeMonth = kind === 'history' ? f.month : f.all ? '' : S.month;
+  if (scopeMonth) list = list.filter((t) => t.date.startsWith(scopeMonth));
+  if (f.cat) list = list.filter((t) => (f.cat === '__none' ? !t.categoryId : t.categoryId === f.cat));
+  if (f.from) list = list.filter((t) => t.date >= f.from);
+  if (f.to) list = list.filter((t) => t.date <= f.to);
+  const min = f.min ? L.parseEuro(f.min) : null, max = f.max ? L.parseEuro(f.max) : null;
+  if (min != null) list = list.filter((t) => t.amountCents >= min);
+  if (max != null) list = list.filter((t) => t.amountCents <= max);
+  const q = f.q.trim().toLowerCase();
+  if (q) list = list.filter((t) => `${t.title} ${t.description} ${catView(t.categoryId).name} ${t.paymentMethod}`.toLowerCase().includes(q));
+  const sorters = { 'date-desc': byDateDesc, 'date-asc': (a, b) => -byDateDesc(a, b), 'amt-desc': (a, b) => b.amountCents - a.amountCents, 'amt-asc': (a, b) => a.amountCents - b.amountCents };
+  list = [...list].sort(sorters[f.sort] || byDateDesc);
+  const inc = list.filter((t) => t.type === 'income').reduce((a, t) => a + t.amountCents, 0), exp = list.filter((t) => t.type === 'expense').reduce((a, t) => a + t.amountCents, 0);
+  const months = [...new Set(S.data.transactions.map((t) => L.monthOf(t.date)))].sort().reverse();
+  const redraw = () => render();
+  const input = (key, props) => h('input', { class: 'input', value: f[key], onInput: (e) => { f[key] = e.target.value; clearTimeout(input.t); input.t = setTimeout(() => { redraw(); const el = document.querySelector(`[data-f="${kind}-${key}"]`); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch { /* date inputs */ } } }, 250); }, 'data-f': `${kind}-${key}`, ...props });
+  const cats = fixed ? catsOf(fixed) : S.data.categories.slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const title = kind === 'income' ? 'Einnahmen' : kind === 'expense' ? 'Ausgaben' : 'Verlauf';
+  const byCat = L.categoryTotals({ ...S.data, transactions: list }, [...new Set(list.map((t) => L.monthOf(t.date)))], fixed || 'expense');
+  return h('div', null,
+    pageHead(title, kind !== 'history' && !f.all ? monthPicker() : null, kind === 'history' ? addButtons() : fixed ? h('button', { class: 'btn ' + fixed, type: 'button', onClick: () => txDialog({ type: fixed }) }, fixed === 'income' ? '+ Einnahme' : '+ Ausgabe') : null),
+    h('div', { class: 'card' },
+      h('div', { class: 'filters' },
+        h('label', { class: 'field' }, h('span', null, 'Suche'), input('q', { type: 'search', placeholder: 'Bezeichnung, Kategorie …' })),
+        kind === 'history' ? h('label', { class: 'field' }, h('span', null, 'Monat'), h('select', { class: 'input', onChange: (e) => { f.month = e.target.value; redraw(); } }, h('option', { value: '' }, 'Alle Monate'), ...months.map((m) => h('option', { value: m, selected: f.month === m }, L.monthLabel(m))))) : null,
+        kind === 'history' ? h('label', { class: 'field' }, h('span', null, 'Art'), h('select', { class: 'input', onChange: (e) => { f.type = e.target.value; f.cat = ''; redraw(); } }, h('option', { value: '' }, 'Einnahmen & Ausgaben'), h('option', { value: 'income', selected: f.type === 'income' }, 'Nur Einnahmen'), h('option', { value: 'expense', selected: f.type === 'expense' }, 'Nur Ausgaben'))) : null,
+        h('label', { class: 'field' }, h('span', null, 'Kategorie'), h('select', { class: 'input', onChange: (e) => { f.cat = e.target.value; redraw(); } }, h('option', { value: '' }, 'Alle Kategorien'), ...cats.map((c) => h('option', { value: c.id, selected: f.cat === c.id }, `${c.icon ? c.icon + ' ' : ''}${c.name}`)), h('option', { value: '__none', selected: f.cat === '__none' }, 'Ohne Kategorie'))),
+        h('label', { class: 'field' }, h('span', null, 'Datum von'), input('from', { type: 'date' })), h('label', { class: 'field' }, h('span', null, 'Datum bis'), input('to', { type: 'date' })),
+        h('label', { class: 'field' }, h('span', null, 'Betrag ab (€)'), input('min', { inputmode: 'decimal', placeholder: '0' })), h('label', { class: 'field' }, h('span', null, 'Betrag bis (€)'), input('max', { inputmode: 'decimal', placeholder: '∞' })),
+        h('label', { class: 'field' }, h('span', null, 'Sortierung'), h('select', { class: 'input', onChange: (e) => { f.sort = e.target.value; redraw(); } }, [['date-desc', 'Neueste zuerst'], ['date-asc', 'Älteste zuerst'], ['amt-desc', 'Höchster Betrag'], ['amt-asc', 'Niedrigster Betrag']].map(([v, l]) => h('option', { value: v, selected: f.sort === v }, l))))),
+      h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '14px', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 8px' } },
+        h('div', { class: 'small muted' }, `${list.length} Buchung${list.length === 1 ? '' : 'en'}`, !type || type === 'income' ? [' · Einnahmen ', h('b', { class: 'pos num' }, L.fmtEuro(inc))] : null, !type || type === 'expense' ? [' · Ausgaben ', h('b', { class: 'num' }, L.fmtEuro(exp))] : null),
+        h('div', { style: { display: 'flex', gap: '8px' } }, kind !== 'history' ? h('button', { class: 'btn sm', type: 'button', onClick: () => { f.all = !f.all; redraw(); } }, f.all ? 'Nur gewählter Monat' : 'Alle Monate') : null,
+          h('button', { class: 'btn sm ghost', type: 'button', onClick: () => { S.filters[kind] = undefined; redraw(); } }, 'Filter zurücksetzen'))),
+      list.length ? h('div', { class: 'list' }, list.slice(0, 400).map((t) => txRow(t))) : emptyState('🔍', 'Keine Buchungen für diese Auswahl.', h('button', { class: 'btn primary', type: 'button', onClick: () => txDialog({ type: fixed || 'expense' }) }, '+ Buchung hinzufügen')),
+      list.length > 400 ? h('div', { class: 'tiny muted', style: { marginTop: '8px' } }, 'Es werden die ersten 400 Treffer angezeigt – bitte Filter verwenden.') : null),
+    fixed && byCat.length ? h('div', { class: 'card', style: { marginTop: '16px' } }, h('div', { class: 'card-head' }, h('h2', null, fixed === 'income' ? 'Einnahmequellen' : 'Ausgaben nach Kategorie')), hBars(byCat)) : null);
+}
+
+// ---------- Seite: Budgets ---------------------------------------------------
+function pageBudgets() {
+  const b = L.budgetStats(S.data, S.month, S.today);
+  const eff = L.effectiveBudgets(S.data, S.month, S.today);
+  const exp = catsOf('expense');
+  const spentMap = new Map([...b.rows.map((r) => [r.cat.id, r.spent]), ...b.others.map((o) => [o.cat.id, o.spent])]);
+  const hasRecord = S.data.budgets.some((x) => x.month === S.month);
+  const isFuture = S.month > L.monthOf(S.today);
+  const prev = L.addMonths(S.month, -1);
+  const rows = exp.map((c) => {
+    const budget = eff[c.id] || 0, spent = spentMap.get(c.id) || 0;
+    const inp = h('input', { class: 'input num', style: { maxWidth: '130px', textAlign: 'right' }, value: budget ? L.centsToInput(budget) : '', placeholder: 'kein Budget', inputmode: 'decimal', 'aria-label': `Budget ${c.name}` });
+    const save = async () => {
+      const v = inp.value.trim() === '' ? 0 : L.parseEuro(inp.value);
+      if (v == null) { inp.classList.add('invalid'); toast('Bitte einen gültigen Betrag eingeben, z. B. 150.', 'bad'); return; }
+      inp.classList.remove('invalid');
+      if (v === budget) return;
+      await commit(L.setBudgetPatch(S.data, S.month, c.id, v, S.today), 'Budget gespeichert.');
+    };
+    inp.addEventListener('change', save); inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
+    const st = budget ? L.budgetStatus(spent, budget) : null;
+    return h('tr', null, h('td', null, h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } }, catBadge(c, 34), h('div', null, h('div', { style: { fontWeight: 650 } }, c.name), budget ? h('div', { class: 'bar', style: { width: '120px', marginTop: '5px' } }, h('i', { 'data-w': Math.min(100, (spent / budget) * 100), style: { background: st === 'ok' ? c.color : statusColor(st) } })) : null))),
+      h('td', { class: 'r' }, inp), h('td', { class: 'r num' }, L.fmtEuro(spent)),
+      h('td', { class: 'r num ' + (budget && budget - spent < 0 ? 'neg' : '') }, budget ? (budget - spent < 0 ? '−' : '') + L.fmtEuro(Math.abs(budget - spent)) : '–'), h('td', { class: 'r' }, st ? statusTag(st) : h('span', { class: 'tag mute' }, 'ohne Budget')));
+  });
+  return h('div', null,
+    pageHead('Budgets', monthPicker()),
+    h('div', { class: 'grid g3' },
+      h('div', { class: 'card kpi' }, h('div', { class: 'label' }, 'Gesamtbudget'), h('div', { class: 'value num' }, L.fmtEuroShort(b.total)), h('div', { class: 'sub' }, 'Summe aller Kategoriebudgets')),
+      h('div', { class: 'card kpi' }, h('div', { class: 'label' }, 'Verbraucht'), h('div', { class: 'value num' }, L.fmtEuroShort(b.spent)), h('div', { class: 'sub' }, b.pct == null ? 'kein Budget' : L.fmtPct(b.pct, 1) + ' des Budgets')),
+      h('div', { class: 'card kpi' }, h('div', { class: 'label' }, 'Noch verfügbar'), h('div', { class: 'value num ' + (b.available < 0 ? 'neg' : 'pos') }, (b.available < 0 ? '−' : '') + L.fmtEuroShort(Math.abs(b.available))), h('div', { class: 'sub' }, b.unbudgeted ? `+ ${L.fmtEuro(b.unbudgeted)} ohne Budget ausgegeben` : 'alle Ausgaben budgetiert'))),
+    h('div', { style: { height: '16px' } }),
+    h('div', { class: 'card' },
+      h('div', { class: 'card-head', style: { flexWrap: 'wrap' } }, h('h2', null, 'Kategoriebudgets'), h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
+        h('button', { class: 'btn sm', type: 'button', onClick: async () => { if (await confirmDialog({ title: 'Budgets übernehmen?', text: `Die Budgets aus ${L.monthLabel(prev)} ersetzen die Budgets für ${L.monthLabel(S.month)}.`, confirmLabel: 'Übernehmen', danger: false })) await commit(L.copyBudgetsPatch(S.data, prev, S.month, S.today), 'Budgets aus dem Vormonat übernommen.'); } }, '⟲ Aus Vormonat übernehmen'),
+        h('button', { class: 'btn sm', type: 'button', onClick: async () => { await commit(L.resetBudgetsPatch(S.data, S.month), 'Auf Standardbudgets zurückgesetzt.'); } }, 'Standardbudgets laden'))),
+      h('div', { class: 'note', style: { marginBottom: '12px' } }, isFuture ? 'Du planst einen zukünftigen Monat. Ohne eigene Änderung gelten die Standardbudgets.' : 'Änderungen gelten nur für diesen Monat. Das Gesamtbudget ergibt sich aus der Summe – so wird nichts doppelt gezählt. Standardbudgets legst du unter „Kategorien verwalten“ fest.', !hasRecord && !isFuture ? ' Für diesen vergangenen Monat wurden noch keine Budgets gespeichert.' : ''),
+      exp.length ? h('div', { style: { overflowX: 'auto' } }, h('table', { class: 't' }, h('thead', null, h('tr', null, h('th', null, 'Kategorie'), h('th', { class: 'r' }, 'Budget / Monat'), h('th', { class: 'r' }, 'Ausgegeben'), h('th', { class: 'r' }, 'Verbleibend'), h('th', { class: 'r' }, 'Status'))), h('tbody', null, rows)))
+        : emptyState('🏷️', 'Noch keine Ausgabenkategorien.', h('button', { class: 'btn primary', type: 'button', onClick: () => categoryDialog({ type: 'expense' }) }, '+ Kategorie hinzufügen')),
+      b.unbudgeted ? h('div', { class: 'small muted', style: { marginTop: '12px' } }, `Ohne Budget ausgegeben: ${L.fmtEuro(b.unbudgeted)} – diese Ausgaben zählen nicht zum Budgetverbrauch.`) : null));
+}
+
+// ---------- Seite: Sparziele -------------------------------------------------
+function goalDialog(goal) {
+  const m = { name: goal ? goal.name : '', target: goal ? L.centsToInput(goal.targetCents) : '', saved: goal ? L.centsToInput(goal.savedCents) : '0', date: goal && goal.targetDate ? goal.targetDate : '', color: goal ? goal.color : '#22C55E', description: goal ? goal.description : '' };
+  modal((close) => {
+    const err = h('div');
+    const draw = () => {};
+    void draw;
+    return h('form', { onSubmit: async (e) => {
+      e.preventDefault(); clear(err);
+      const t = L.parseEuro(m.target), sv = m.saved.trim() ? L.parseEuro(m.saved) : 0;
+      if (t == null) return err.append(h('div', { class: 'err' }, 'Bitte einen gültigen Zielbetrag eingeben.'));
+      if (sv == null) return err.append(h('div', { class: 'err' }, 'Bitte einen gültigen gesparten Betrag eingeben.'));
+      const r = L.saveGoal(S.data, { id: goal && goal.id, name: m.name, targetCents: t, savedCents: sv, targetDate: m.date || null, color: m.color, description: m.description });
+      if (r.error) return err.append(h('div', { class: 'err' }, r.error));
+      if (await commit(r.patch, 'Sparziel gespeichert.')) close();
+    } }, h('h2', null, goal ? 'Sparziel bearbeiten' : 'Neues Sparziel'),
+      h('div', { class: 'form-grid' },
+        h('div', { class: 'full' }, field('Name', h('input', { class: 'input', value: m.name, maxlength: 60, placeholder: 'z. B. Urlaub', 'data-autofocus': '1', onInput: (e) => { m.name = e.target.value; } }))),
+        field('Zielbetrag in €', h('input', { class: 'input num', value: m.target, inputmode: 'decimal', onInput: (e) => { m.target = e.target.value; } })),
+        field('Bereits gespart in €', h('input', { class: 'input num', value: m.saved, inputmode: 'decimal', onInput: (e) => { m.saved = e.target.value; } })),
+        h('div', { class: 'full' }, field('Zieldatum (optional)', h('input', { class: 'input', type: 'date', value: m.date, onInput: (e) => { m.date = e.target.value; } }))),
+        h('div', { class: 'full' }, field('Farbe', swatchPicker(L.PALETTE, m.color, (c) => { m.color = c; }))),
+        h('div', { class: 'full' }, field('Beschreibung (optional)', h('textarea', { class: 'input', maxlength: 300, onInput: (e) => { m.description = e.target.value; } }, m.description)))),
+      h('div', { class: 'note', style: { marginTop: '12px' } }, 'Beträge, die du für ein Sparziel zurücklegst, zählen nicht als Ausgabe.'), h('div', { style: { marginTop: '12px' } }, err),
+      h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onClick: () => close() }, 'Abbrechen'), h('button', { class: 'btn primary', type: 'submit' }, 'Speichern')));
+  });
+}
+function adjustGoal(goal) {
+  modal((close) => {
+    const inp = h('input', { class: 'input num', inputmode: 'decimal', placeholder: '0,00', 'data-autofocus': '1' }); const err = h('div');
+    const apply = async (sign) => {
+      clear(err); const v = L.parseEuro(inp.value);
+      if (v == null || v <= 0) return err.append(h('div', { class: 'err' }, 'Bitte einen Betrag größer als 0 eingeben.'));
+      const next = goal.savedCents + sign * v;
+      if (next < 0) return err.append(h('div', { class: 'err' }, `So viel ist nicht gespart (aktuell ${L.fmtEuro(goal.savedCents)}).`));
+      const r = L.saveGoal(S.data, { ...goal, savedCents: next });
+      if (r.error) return err.append(h('div', { class: 'err' }, r.error));
+      if (await commit(r.patch, sign > 0 ? 'Betrag eingezahlt.' : 'Betrag entnommen.')) close();
+    };
+    return h('form', { onSubmit: (e) => { e.preventDefault(); apply(1); } }, h('h2', null, `Gesparten Betrag ändern – ${goal.name}`), h('p', { class: 'muted', style: { marginTop: 0 } }, `Aktuell gespart: ${L.fmtEuro(goal.savedCents)} von ${L.fmtEuro(goal.targetCents)}`),
+      field('Betrag in €', inp), h('div', { style: { marginTop: '12px' } }, err),
+      h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onClick: () => close() }, 'Abbrechen'), h('button', { class: 'btn', type: 'button', onClick: () => apply(-1) }, '− Entnehmen'), h('button', { class: 'btn primary', type: 'submit' }, '+ Einzahlen')));
+  });
+}
+function pageGoals() {
+  const goals = [...S.data.goals].sort((a, b) => (a.targetDate || '9') < (b.targetDate || '9') ? -1 : 1);
+  const totalSaved = goals.reduce((a, g) => a + g.savedCents, 0), totalTarget = goals.reduce((a, g) => a + g.targetCents, 0);
+  return h('div', null, pageHead('Sparziele', h('button', { class: 'btn primary', type: 'button', onClick: () => goalDialog(null) }, '+ Sparziel')),
+    goals.length ? h('div', { class: 'note', style: { marginBottom: '16px' } }, `Insgesamt gespart: `, h('b', null, L.fmtEuro(totalSaved)), ` von ${L.fmtEuro(totalTarget)}. Sparziele zählen nicht als Ausgabe.`) : null,
+    goals.length ? h('div', { class: 'grid g2' }, goals.map((g) => {
+      const p = L.goalProgress(g, S.today);
+      return h('div', { class: 'card' }, h('div', { style: { display: 'flex', gap: '16px', alignItems: 'center' } }, miniRing(p.pct, g.color, Math.floor(p.pct) + ' %'),
+        h('div', { style: { minWidth: 0, flex: 1 } }, h('h3', { style: { fontSize: '17px' } }, g.name), g.description ? h('div', { class: 'small muted' }, g.description) : null,
+          h('div', { style: { marginTop: '6px' } }, h('b', { class: 'num' }, L.fmtEuro(g.savedCents)), h('span', { class: 'muted num' }, ` / ${L.fmtEuro(g.targetCents)}`)),
+          h('div', { class: 'small muted' }, p.done ? '🎉 Ziel erreicht!' : [`Noch ${L.fmtEuro(p.remaining)}`, g.targetDate ? ` · bis ${L.fmtDate(g.targetDate)}` : '', p.perMonth ? ` · ca. ${L.fmtEuro(p.perMonth)} / Monat` : '', p.monthsLeft != null && p.monthsLeft <= 0 && !p.done ? ' · Zieldatum erreicht' : ''].join(''))),
+      ), h('div', { style: { display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' } },
+        h('button', { class: 'btn sm primary', type: 'button', onClick: () => adjustGoal(g) }, '± Betrag'), h('button', { class: 'btn sm', type: 'button', onClick: () => goalDialog(g) }, 'Bearbeiten'),
+        h('button', { class: 'btn sm ghost', type: 'button', onClick: async () => { if (await confirmDialog({ title: 'Sparziel löschen?', text: `„${g.name}“ wird gelöscht. Deine Buchungen sind davon nicht betroffen.` })) await commit({ goals: { del: [g.id] } }, 'Sparziel gelöscht.'); } }, 'Löschen')));
+    })) : h('div', { class: 'card' }, emptyState('🐷', 'Noch keine Sparziele. Lege dein erstes Ziel an – z. B. Urlaub oder Notgroschen.', h('button', { class: 'btn primary', type: 'button', onClick: () => goalDialog(null) }, '+ Sparziel anlegen'))));
+}
+
+// ---------- Seite: Statistik -------------------------------------------------
+const viewSwitch = () => segmented([{ value: 'trend', label: '📈 Verlauf' }, { value: 'compare', label: '⚖️ Monate vergleichen' }], S.statView, (v) => { S.statView = v; render(); });
+
+// ---------- Statistik: Monatsvergleich ---------------------------------------
+const signed = (c) => (c > 0 ? '+' : c < 0 ? '−' : '') + L.fmtEuro(Math.abs(c));
+const signedPct = (v) => (v == null ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + L.fmtPct(Math.abs(v), 1));
+/** good: 'up' = Anstieg ist positiv (grün), 'down' = Anstieg ist negativ (rot) */
+function diffCell(diff, text, good) {
+  if (diff == null) return h('span', { class: 'muted' }, '–');
+  if (diff === 0) return h('span', { class: 'muted num' }, text);
+  const positive = good === 'up' ? diff > 0 : diff < 0;
+  return h('span', { class: 'num ' + (positive ? 'pos' : 'neg'), style: { fontWeight: 700 } }, (diff > 0 ? '▲ ' : '▼ ') + text);
+}
+function pageCompare() {
+  const cur = L.monthOf(S.today);
+  const dataMonths = S.data.transactions.map((t) => L.monthOf(t.date)).sort();
+  const first = dataMonths.length && dataMonths[0] < L.addMonths(cur, -11) ? dataMonths[0] : L.addMonths(cur, -11);
+  const lastData = dataMonths.length ? dataMonths[dataMonths.length - 1] : cur;
+  const options = L.monthRange(first, lastData > cur ? lastData : cur).reverse();
+  if (!S.cmpB) S.cmpB = cur;
+  if (!S.cmpA) S.cmpA = L.addMonths(cur, -1);
+  for (const k of ['cmpA', 'cmpB']) if (!options.includes(S[k])) options.push(S[k]);
+  options.sort().reverse();
+  const A = S.cmpA, B = S.cmpB;
+  const c = L.compareMonths(S.data, A, B, S.today);
+  const la = L.monthLabel(A), lb = L.monthLabel(B);
+  const pick = (key, label) => field(label, h('select', { class: 'input', 'aria-label': label, onChange: (e) => { S[key] = e.target.value; render(); } }, options.map((m) => h('option', { value: m, selected: S[key] === m }, L.monthLabel(m)))));
+  const preset = (label, a, b) => h('button', { class: 'btn sm', type: 'button', onClick: () => { S.cmpA = a; S.cmpB = b; render(); } }, label);
+  const k = c.kpis;
+  const rd = (v) => (v == null ? null : Math.round(v * 10) / 10); // auf angezeigte Genauigkeit runden, sonst erscheint „−0 Pkt.“
+  const pp = (v) => { const r = rd(v); return r == null ? '' : `${r > 0 ? '+' : r < 0 ? '−' : ''}${Math.abs(r).toLocaleString('de-DE', { maximumFractionDigits: 1 })} Pkt.`; };
+  const row = (label, a, b, cell) => h('tr', null, h('td', { style: { fontWeight: 650 } }, label), h('td', { class: 'r num' }, a), h('td', { class: 'r num' }, b), h('td', { class: 'r' }, cell));
+  const kpiTable = h('div', { style: { overflowX: 'auto' } }, h('table', { class: 't' },
+    h('thead', null, h('tr', null, h('th', null, 'Kennzahl'), h('th', { class: 'r' }, la), h('th', { class: 'r' }, lb), h('th', { class: 'r' }, 'Veränderung'))),
+    h('tbody', null,
+      row('Einnahmen', L.fmtEuro(k.income.a), L.fmtEuro(k.income.b), diffCell(k.income.diff, `${signed(k.income.diff)} (${signedPct(k.income.pct)})`, 'up')),
+      row('Ausgaben', L.fmtEuro(k.expense.a), L.fmtEuro(k.expense.b), diffCell(k.expense.diff, `${signed(k.expense.diff)} (${signedPct(k.expense.pct)})`, 'down')),
+      row('Überschuss', L.fmtEuro(k.balance.a), L.fmtEuro(k.balance.b), diffCell(k.balance.diff, `${signed(k.balance.diff)} (${signedPct(k.balance.pct)})`, 'up')),
+      row('Sparquote', k.savingsRate.a == null ? '–' : L.fmtPct(k.savingsRate.a, 1), k.savingsRate.b == null ? '–' : L.fmtPct(k.savingsRate.b, 1), diffCell(rd(k.savingsRate.diff), pp(k.savingsRate.diff), 'up')),
+      row('Budgetverbrauch', k.budgetPct.a == null ? '–' : L.fmtPct(k.budgetPct.a, 1), k.budgetPct.b == null ? '–' : L.fmtPct(k.budgetPct.b, 1), diffCell(rd(k.budgetPct.diff), pp(k.budgetPct.diff), 'down')))));
+  const isExp = S.cmpType === 'expense';
+  const cats = isExp ? c.expenseCats : c.incomeCats;
+  const good = isExp ? 'down' : 'up';
+  const inc = cats.filter((x) => x.diff > 0)[0], dec = [...cats].reverse().filter((x) => x.diff < 0)[0];
+  const insight = [];
+  if (isExp && inc) insight.push(h('div', null, '📈 Größte Steigerung: ', h('b', null, inc.name), ` (${signed(inc.diff)}${inc.pct == null ? ', neu in diesem Monat' : ', ' + signedPct(inc.pct)})`));
+  if (isExp && dec) insight.push(h('div', null, '📉 Größte Einsparung: ', h('b', null, dec.name), ` (${signed(dec.diff)}, ${signedPct(dec.pct)})`));
+  if (!isExp && inc) insight.push(h('div', null, '📈 Größte Steigerung: ', h('b', null, inc.name), ` (${signed(inc.diff)})`));
+  if (!isExp && dec) insight.push(h('div', null, '📉 Größter Rückgang: ', h('b', null, dec.name), ` (${signed(dec.diff)})`));
+  const top = [...cats].sort((x, y) => y.a + y.b - (x.a + x.b)).slice(0, 8);
+  const short = (n) => (n.length > 9 ? n.slice(0, 8) + '…' : n);
+  const catTable = cats.length ? h('div', { style: { overflowX: 'auto' } }, h('table', { class: 't' },
+    h('thead', null, h('tr', null, h('th', null, 'Kategorie'), h('th', { class: 'r' }, L.monthShort(A)), h('th', { class: 'r' }, L.monthShort(B)), h('th', { class: 'r' }, 'Differenz'), h('th', { class: 'r' }, '%'))),
+    h('tbody', null, cats.map((x) => h('tr', null,
+      h('td', null, h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, h('i', { class: 'dot', style: { background: x.color } }), (x.icon ? x.icon + ' ' : '') + x.name)),
+      h('td', { class: 'r num' }, L.fmtEuro(x.a)), h('td', { class: 'r num' }, L.fmtEuro(x.b)),
+      h('td', { class: 'r' }, diffCell(x.diff, signed(x.diff), good)), h('td', { class: 'r' }, diffCell(x.diff, x.pct == null ? 'neu' : signedPct(x.pct), good))))))) : h('div', { class: 'muted' }, 'In beiden Monaten gibt es keine Buchungen dieser Art.');
+  return h('div', null,
+    pageHead('Statistik', viewSwitch()),
+    h('div', { class: 'card', style: { marginBottom: '16px' } },
+      h('div', { class: 'form-grid' }, pick('cmpA', 'Monat 1 (Basis)'), pick('cmpB', 'Monat 2 (Vergleich)')),
+      h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' } },
+        h('button', { class: 'btn sm', type: 'button', onClick: () => { const x = S.cmpA; S.cmpA = S.cmpB; S.cmpB = x; render(); } }, '⇄ Tauschen'),
+        preset('Dieser Monat vs. Vormonat', L.addMonths(cur, -1), cur), preset('Dieser Monat vs. Vorjahresmonat', L.addMonths(cur, -12), cur)),
+      A === B ? h('div', { class: 'note warn', style: { marginTop: '12px' } }, 'Du hast zweimal denselben Monat gewählt – wähle zwei verschiedene Monate für einen sinnvollen Vergleich.') : null),
+    h('div', { class: 'card', style: { marginBottom: '16px' } }, h('div', { class: 'card-head' }, h('h2', null, `${la} → ${lb}`)), kpiTable,
+      h('div', { class: 'tiny muted', style: { marginTop: '8px' } }, 'Grün = vorteilhaft, Rot = nachteilig. Veränderung = Monat 2 minus Monat 1; bei Quoten in Prozentpunkten.')),
+    h('div', { class: 'card' },
+      h('div', { class: 'card-head', style: { flexWrap: 'wrap' } }, h('h2', null, 'Nach Kategorie'), segmented([{ value: 'expense', label: 'Ausgaben' }, { value: 'income', label: 'Einnahmen' }], S.cmpType, (v) => { S.cmpType = v; render(); })),
+      insight.length ? h('div', { class: 'note', style: { marginBottom: '14px' } }, insight) : null,
+      top.length ? barChart({ labels: top.map((x) => short(x.name)), series: [{ name: la, color: '#94A3B8', values: top.map((x) => x.a) }, { name: lb, color: 'var(--accent)', values: top.map((x) => x.b) }], height: 250 }) : null,
+      h('div', { style: { height: '12px' } }), catTable));
+}
+
+function pageStats() {
+  if (S.statView === 'compare') return pageCompare();
+  const months = L.statMonths(S.data, S.statRange, S.today);
+  const rows = months.map((m) => L.monthStatRow(S.data, m, S.today));
+  const labels = months.map(L.monthShort);
+  if (S.statSel && !months.includes(S.statSel)) S.statSel = null;
+  const sel = S.statSel ? months.indexOf(S.statSel) : null;
+  const onSel = (i) => { S.statSel = S.statSel === months[i] ? null : months[i]; render(); };
+  const cats = L.categoryTotals(S.data, S.statSel ? [S.statSel] : months, 'expense');
+  const hasData = S.data.transactions.length > 0;
+  const totalExp = cats.reduce((a, c) => a + c.total, 0);
+  let detail = null;
+  if (S.statSel) {
+    const r = rows[sel];
+    detail = h('div', { class: 'card', style: { marginBottom: '16px' } }, h('div', { class: 'card-head' }, h('h2', null, `Details ${L.monthLabel(S.statSel)}`), h('button', { class: 'btn sm ghost', type: 'button', onClick: () => { S.statSel = null; render(); } }, 'Auswahl aufheben')),
+      h('div', { class: 'grid g4' }, [['Einnahmen', money(r.income, 'pos')], ['Ausgaben', money(r.expense)], ['Überschuss', money(r.balance, r.balance < 0 ? 'neg' : 'pos')], ['Sparquote', r.savingsRate == null ? '–' : L.fmtPct(r.savingsRate, 1)]].map(([l, v]) => h('div', { class: 'kpi' }, h('div', { class: 'label' }, l), h('div', { class: 'value', style: { fontSize: '20px' } }, v)))),
+      h('div', { class: 'small muted', style: { marginTop: '10px' } }, r.util == null ? 'Kein Budget in diesem Monat.' : `Budget ${L.fmtEuroShort(r.budgetTotal)}, verbraucht ${L.fmtEuro(r.budgetSpent)} (${L.fmtPct(r.util, 1)}).`),
+      h('button', { class: 'btn sm', type: 'button', style: { marginTop: '10px' }, onClick: () => { S.filters.history = { q: '', cat: '', min: '', max: '', from: '', to: '', type: '', sort: 'date-desc', all: false, month: S.statSel }; go('history'); } }, 'Buchungen dieses Monats ansehen'));
+  }
+  const card = (title, content, sub) => h('div', { class: 'card' }, h('div', { class: 'card-head' }, h('div', null, h('h2', null, title), sub ? h('div', { class: 'small muted' }, sub) : null)), content);
+  const pctSeries = rows.map((r) => r.util);
+  const catSel = S.statCat && cats.find((c) => c.id === S.statCat);
+  return h('div', null,
+    pageHead('Statistik', viewSwitch(), h('div', { class: 'seg', role: 'group', 'aria-label': 'Zeitraum' }, [['current', 'Monat'], ['3', '3 Monate'], ['6', '6 Monate'], ['12', '12 Monate'], ['all', 'Alles']].map(([k, l]) => h('button', { type: 'button', class: S.statRange === k ? 'on' : '', onClick: () => { S.statRange = k; S.statSel = null; render(); } }, l)))),
+    !hasData ? h('div', { class: 'card' }, emptyState('📈', 'Sobald du Buchungen erfasst, erscheinen hier deine Auswertungen.')) : [
+      detail, h('div', { class: 'note', style: { marginBottom: '16px' } }, 'Tipp: Klicke auf einen Monat in einem Diagramm, um Details zu sehen.'),
+      h('div', { class: 'grid g2' },
+        card('Einnahmen & Ausgaben', barChart({ labels, series: [{ name: 'Einnahmen', color: 'var(--ok)', values: rows.map((r) => r.income) }, { name: 'Ausgaben', color: 'var(--bad)', values: rows.map((r) => r.expense) }], selected: sel, onSelect: onSel })),
+        card('Monatlicher Überschuss', lineChart({ labels, series: [{ name: 'Überschuss', color: 'var(--accent)', values: rows.map((r) => r.balance) }], selected: sel, onSelect: onSel })),
+        card('Sparquote', lineChart({ labels, series: [{ name: 'Sparquote', color: '#14B8A6', values: rows.map((r) => (r.savingsRate == null ? null : Math.round(r.savingsRate * 10) / 10)) }], selected: sel, onSelect: onSel, fmt: pctAxis, tipFmt: (v) => L.fmtPct(v, 1) }), 'Anteil des Einkommens, der übrig bleibt'),
+        card('Budgetauslastung', barChart({ labels, series: [{ name: 'Auslastung', color: '#F59E0B', values: pctSeries.map((v) => (v == null ? 0 : Math.round(v * 10) / 10)) }], selected: sel, onSelect: onSel, fmt: pctAxis, tipFmt: (v) => L.fmtPct(v, 1) }), 'Verbrauchtes Budget je Monat – über 100 % = überschritten'),
+        card('Geplant vs. tatsächlich', barChart({ labels, series: [{ name: 'Geplantes Budget', color: '#94A3B8', values: rows.map((r) => r.budgetTotal) }, { name: 'Budgetrelevante Ausgaben', color: 'var(--accent)', values: rows.map((r) => r.budgetSpent) }], selected: sel, onSelect: onSel })),
+        card(S.statSel ? `Ausgaben nach Kategorie – ${L.monthShort(S.statSel)}` : 'Ausgaben nach Kategorie', cats.length ? h('div', null, hBars(cats, { selectedId: S.statCat, onSelect: (id) => { S.statCat = S.statCat === id ? null : id; render(); } }),
+          catSel ? h('div', { class: 'detail' }, h('h3', null, `${catSel.name} im Zeitverlauf`), barChart({ labels, series: [{ name: catSel.name, color: catSel.color, values: L.categoryMonthly(S.data, months, catSel.id, 'expense') }], height: 180 })) : null) : h('div', { class: 'muted' }, 'Keine Ausgaben im Zeitraum.'), cats.length ? `Gesamt ${L.fmtEuro(totalExp)}` : null)),
+    ]);
+}
+
+// ---------- Seite: Kategorien verwalten --------------------------------------
+function pageCategories() {
+  const counts = new Map();
+  for (const t of S.data.transactions) counts.set(t.categoryId || '', (counts.get(t.categoryId || '') || 0) + 1);
+  const section = (type, title, emptyText) => {
+    const cats = catsOf(type);
+    return h('div', { class: 'card cat-sec' },
+      h('div', { class: 'card-head' }, h('h2', null, h('span', { class: 'dot', style: { background: type === 'income' ? 'var(--ok)' : 'var(--bad)' } }), title, h('span', { class: 'tag mute' }, String(cats.length))),
+        h('button', { class: 'btn sm', type: 'button', onClick: () => categoryDialog({ type }) }, '+ Neu')),
+      cats.length ? h('div', null, cats.map((c) => {
+        const n = counts.get(c.id) || 0;
+        return h('div', { class: 'cat-row' }, catBadge(c, 42),
+          h('div', { class: 'grow' }, h('div', { class: 'cat-name', style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, c.name),
+            h('div', { class: 'cat-meta' }, [n ? `${n} Buchung${n === 1 ? '' : 'en'}` : 'ungenutzt', type === 'expense' ? (c.defaultBudgetCents ? `Budget ${L.fmtEuroShort(c.defaultBudgetCents)} / Monat` : 'kein Budget') : null].filter(Boolean).join(' · '))),
+          h('span', { class: 'dot', style: { background: c.color, width: '16px', height: '16px' }, title: c.color }),
+          h('div', { class: 'acts', style: { display: 'flex' } }, h('button', { class: 'icon-btn', type: 'button', 'aria-label': `${c.name} bearbeiten`, title: 'Bearbeiten', onClick: () => categoryDialog({ id: c.id }) }, '✏️'),
+            h('button', { class: 'icon-btn del', type: 'button', 'aria-label': `${c.name} löschen`, title: 'Löschen', onClick: () => deleteCategoryDialog(c) }, '🗑️')));
+      })) : emptyState(type === 'income' ? '💶' : '🧾', emptyText, h('button', { class: 'btn primary', type: 'button', onClick: () => categoryDialog({ type }) }, '+ Kategorie hinzufügen')));
+  };
+  const noCat = counts.get('') || 0;
+  return h('div', null,
+    pageHead('Kategorien verwalten', h('button', { class: 'btn primary big', type: 'button', onClick: () => categoryDialog({ type: 'expense' }) }, '+ Kategorie hinzufügen')),
+    h('div', { class: 'note', style: { marginBottom: '16px' } }, 'Änderungen an Namen, Farben und Symbolen gelten sofort überall – auch für alle bisherigen Buchungen. Beim Löschen gehen standardmäßig keine Buchungen verloren.', noCat ? ` ${noCat} Buchung${noCat === 1 ? '' : 'en'} ${noCat === 1 ? 'ist' : 'sind'} derzeit ohne Kategorie.` : ''),
+    h('div', { class: 'grid g2', style: { alignItems: 'start' } },
+      section('income', 'Einnahmenkategorien', 'Noch keine Einnahmenkategorien.'), section('expense', 'Ausgabenkategorien', 'Noch keine Ausgabenkategorien.')));
+}
+
+// ---------- Seite: Einstellungen --------------------------------------------
+const fmtBytes = (n) => (n == null ? '–' : n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1024 / 1024).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' MB');
+function pageSettings() {
+  const d = S.data;
+  const importInput = h('input', { type: 'file', accept: 'application/json,.json', class: 'hide', onChange: async (e) => {
+    const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+    if (file.size > 30 * 1024 * 1024) return toast('Die Datei ist zu groß für ein Backup.', 'bad');
+    const r = L.parseBackup(await file.text());
+    if (r.error) return toast(r.error, 'bad');
+    const ok = await confirmDialog({ title: 'Backup importieren?', text: `Das Backup enthält ${r.data.transactions.length} Buchungen, ${r.data.categories.length} Kategorien, ${r.data.goals.length} Sparziele. ACHTUNG: Alle aktuellen Daten in der App werden dadurch ersetzt (vorher wird automatisch ein Snapshot angelegt).`, confirmLabel: 'Aktuelle Daten ersetzen' });
+    if (!ok) return;
+    try { await replaceAllData(r.data, 'Vor Backup-Import'); toast('Backup importiert.'); } catch (err) { toast('Import fehlgeschlagen: ' + err.message, 'bad'); }
+  } });
+  const st = S.storage;
+  const row = (ico, title, content) => h('div', { style: { display: 'flex', gap: '12px', alignItems: 'flex-start' } }, h('span', { style: { fontSize: '20px', lineHeight: '1.3' } }, ico), h('div', { style: { flex: 1, minWidth: 0 } }, h('div', { style: { fontWeight: 700 } }, title), content));
+  const folderBlock = !folderSupported()
+    ? h('div', { class: 'note' }, 'Automatische Ordner-Backups funktionieren in Chrome, Edge und Opera am Computer. In diesem Browser nutze bitte „Backup herunterladen“ – oder öffne die App in Chrome/Edge.')
+    : !S.folder
+      ? h('div', { class: 'stack' }, h('div', { class: 'small muted' }, 'Wähle einen Ordner – am besten in einem Cloud-Ordner (OneDrive, iCloud Drive, Dropbox, Google Drive) oder auf einem USB-Stick. Die App speichert dort nach jeder Änderung automatisch ein Backup und behält die letzten 30 Tage als Tagesdateien.'),
+          h('div', null, h('button', { class: 'btn primary', type: 'button', onClick: chooseFolder }, '📁 Backup-Ordner wählen …')))
+      : h('div', { class: 'stack' },
+          S.folderPerm === 'granted' ? h('div', { class: 'note ok' }, `✓ Aktiv: Ordner „${S.folder.name}“. Bei jeder Änderung wird automatisch gesichert.`)
+            : h('div', { class: 'note warn' }, `Ordner „${S.folder.name}“: Der Browser verlangt nach einem Neustart eine erneute Bestätigung.`),
+          S.folderError ? h('div', { class: 'err' }, 'Letzter Fehler: ' + S.folderError) : null,
+          h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
+            S.folderPerm !== 'granted' ? h('button', { class: 'btn primary', type: 'button', onClick: () => runFolderBackup({ request: true, quiet: false }) }, 'Zugriff erlauben') : h('button', { class: 'btn', type: 'button', onClick: () => runFolderBackup({ request: true, quiet: false }) }, 'Jetzt sichern'),
+            h('button', { class: 'btn', type: 'button', onClick: chooseFolder }, 'Anderen Ordner wählen'), h('button', { class: 'btn ghost', type: 'button', onClick: disconnectFolder }, 'Trennen')));
+  const installBlock = isStandalone() ? h('div', { class: 'note ok' }, '✓ Du nutzt die App bereits als eigenes Programm-Fenster.')
+    : h('div', { class: 'stack' },
+        location.protocol === 'file:' ? h('div', { class: 'note warn' }, 'Du hast die Datei direkt geöffnet. So lässt sich die App nicht installieren. Starte sie über das mitgelieferte Start-Skript (siehe README) oder lege den Ordner „dist“ auf einen kostenlosen Webspace (GitHub Pages, Netlify).') : null,
+        S.installPrompt ? h('div', null, h('button', { class: 'btn primary', type: 'button', onClick: async () => { const ev = S.installPrompt; S.installPrompt = null; ev.prompt(); try { await ev.userChoice; } catch { /* egal */ } render(); } }, '⬇ Als App installieren')) : null,
+        h('div', { class: 'small muted' }, h('b', null, 'Computer (Chrome/Edge): '), 'Symbol „Installieren“ rechts in der Adressleiste, oder Menü ⋮ → „App installieren“.', h('br'), h('b', null, 'Android (Chrome): '), 'Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm“.', h('br'), h('b', null, 'iPhone/iPad (Safari): '), 'Teilen-Symbol → „Zum Home-Bildschirm“.'));
+  const snapBlock = S.db ? (S.snapshots.length
+    ? h('div', { class: 'list' }, S.snapshots.slice(0, 8).map((sn) => h('div', { class: 'row' }, h('div', { class: 'grow' }, h('div', { class: 'title' }, sn.reason), h('div', { class: 'tiny muted' }, fmtDateTime(sn.at), sn.counts ? ` · ${sn.counts.tx} Buchungen` : '', ` · ${fmtBytes(sn.size)}`)),
+        h('button', { class: 'btn sm', type: 'button', onClick: () => restoreSnapshot(sn) }, 'Wiederherstellen'))))
+    : h('div', { class: 'small muted' }, 'Noch keine Snapshots. Sie entstehen täglich beim ersten Öffnen und vor riskanten Aktionen (Import, Zurücksetzen, Löschen samt Buchungen).')) : h('div', { class: 'small muted' }, 'Nicht verfügbar (kein Datenbankzugriff).');
+  return h('div', null, pageHead('Einstellungen'),
+    h('div', { class: 'grid g2', style: { alignItems: 'start' } },
+      h('div', { class: 'card stack', style: { gridColumn: '1 / -1' } }, h('h2', null, '🛡️ Langzeit-Sicherung'),
+        h('div', { class: 'grid g2' },
+          row('💽', 'Speicherschutz', h('div', { class: 'small muted' }, st.persisted == null ? 'Wird geprüft …' : st.persisted ? '✓ Dauerhafter Speicher aktiv: Der Browser löscht deine Daten nicht automatisch bei Platzmangel.' : 'Nicht garantiert: Bei Speichermangel dürfte der Browser die Daten löschen.',
+            st.usage != null ? ` Belegt: ${fmtBytes(st.usage)}.` : '', st.persisted === false ? h('div', { style: { marginTop: '8px' } }, h('button', { class: 'btn sm', type: 'button', onClick: () => refreshStorage(true) }, 'Dauerhaften Speicher anfragen')) : null)),
+          row('🕒', 'Letztes Backup', h('div', { class: 'small muted' }, S.meta.lastBackupAt ? fmtDateTime(S.meta.lastBackupAt) : 'Noch nie.', backupNeeded() ? ' – bitte jetzt sichern.' : ''))),
+        h('div', { class: 'card', style: { background: 'var(--card2)', boxShadow: 'none' } }, h('h3', { style: { marginBottom: '10px' } }, 'Automatisches Backup in einen Ordner (empfohlen)'), folderBlock),
+        h('div', { class: 'small muted' }, 'Merke: Browserdaten können durch „Websitedaten löschen“, Browser-Neuinstallation oder PC-Wechsel verloren gehen. Eine Datei in einem Ordner außerhalb des Browsers ist die sicherste Langzeit-Lösung.')),
+      h('div', { class: 'card stack' }, h('h2', null, 'Backup & Export'),
+        h('div', { class: 'small muted' }, `${d.transactions.length} Buchungen · ${d.categories.length} Kategorien · ${d.goals.length} Sparziele. Alles bleibt auf diesem Gerät.`),
+        h('button', { class: 'btn primary', type: 'button', onClick: downloadBackup }, '⬇ Backup (JSON) herunterladen'),
+        h('button', { class: 'btn', type: 'button', onClick: () => downloadFile(`finanz-buchungen-${L.todayISO()}.csv`, L.toCsv(S.data), 'text/csv') }, '⬇ Buchungen als CSV (Excel)'),
+        h('button', { class: 'btn', type: 'button', onClick: () => importInput.click() }, '⬆ Backup importieren'), importInput),
+      h('div', { class: 'card stack' }, h('h2', null, '📲 Als eigene App'), installBlock),
+      h('div', { class: 'card stack', style: { gridColumn: '1 / -1' } }, h('h2', null, '🕘 Sicherheits-Snapshots'), h('div', { class: 'small muted' }, 'Automatische Sicherungskopien im Browser – Rückgängig-Funktion bei Fehlern. Die letzten 15 werden behalten.'), snapBlock),
+      h('div', { class: 'card stack' }, h('h2', null, 'Darstellung'), segmented([{ value: 'system', label: 'Automatisch' }, { value: 'light', label: 'Hell' }, { value: 'dark', label: 'Dunkel' }], d.settings.theme, async (v) => { document.documentElement.setAttribute('data-theme', v); await commit({ settings: { theme: v } }); }),
+        h('div', { class: 'small muted' }, 'Währung: Euro (€) · Datumsformat: TT.MM.JJJJ')),
+      h('div', { class: 'card stack' }, h('h2', null, 'Beispieldaten'),
+        h('div', { class: 'small muted' }, L.hasSampleData(d) ? 'Beispieldaten sind aktiv und überall als Beispiel markiert.' : 'Es sind keine Beispieldaten vorhanden.'),
+        h('button', { class: 'btn', type: 'button', disabled: !L.hasSampleData(d), onClick: deleteSample }, 'Beispieldaten löschen')),
+      h('div', { class: 'card stack' }, h('h2', null, 'Alles zurücksetzen'), h('div', { class: 'small muted' }, 'Löscht alle Buchungen, Budgets und Sparziele. Es bleiben nur die Standardkategorien. Vorher wird automatisch ein Snapshot angelegt.'),
+        h('button', { class: 'btn danger', type: 'button', onClick: resetAll }, 'Alle Daten löschen …')),
+      h('div', { class: 'card stack', style: { gridColumn: '1 / -1' } }, h('h2', null, 'Datenschutz'),
+        h('div', { class: 'small' }, 'Die App ist komplett offline lauffähig. Deine Daten liegen ausschließlich in der IndexedDB-Datenbank dieses Browsers (und – falls aktiviert – in deinem Backup-Ordner); es werden keine Daten an Server gesendet. Browser-Daten sind an die Adresse gebunden, unter der du die App öffnest.'))));
+}
+function resetAll() {
+  modal((close) => {
+    const inp = h('input', { class: 'input', autocomplete: 'off', 'data-autofocus': '1' }); const go = h('button', { class: 'btn danger', type: 'button', disabled: true }, 'Alles löschen');
+    inp.addEventListener('input', () => { go.disabled = inp.value.trim().toUpperCase() !== 'LÖSCHEN'; });
+    go.addEventListener('click', async () => {
+      try { await replaceAllData(L.freshData(), 'Vor „Alles zurücksetzen“'); close(); toast('Alle Daten wurden zurückgesetzt. Ein Snapshot des alten Stands liegt in den Einstellungen.'); } catch (e) { toast('Zurücksetzen fehlgeschlagen: ' + e.message, 'bad'); }
+    });
+    return h('div', null, h('h2', null, 'Wirklich alles löschen?'), h('div', { class: 'stack' }, h('div', { class: 'note bad' }, 'Alle Buchungen, Budgets und Sparziele werden gelöscht. Einen Snapshot des alten Stands legt die App automatisch an.'),
+      h('button', { class: 'btn', type: 'button', onClick: downloadBackup }, '⬇ Zusätzlich Backup-Datei herunterladen'), field('Zur Bestätigung „LÖSCHEN“ eingeben', inp)),
+      h('div', { class: 'foot' }, h('button', { class: 'btn', type: 'button', onClick: () => close() }, 'Abbrechen'), go));
+  });
+}
+
+// ---------- Rendern ----------------------------------------------------------
+function render() {
+  applyTheme();
+  const r = root(); if (!r) return;
+  const scrollY = window.scrollY;
+  const pages = { dashboard: pageDashboard, income: () => pageTransactions('income'), expense: () => pageTransactions('expense'), history: () => pageTransactions('history'), budgets: pageBudgets, goals: pageGoals, stats: pageStats, categories: pageCategories, settings: pageSettings };
+  const active = document.activeElement; const keep = active && active.dataset && active.dataset.f ? active.dataset.f : null; void keep;
+  clear(r);
+  r.append(
+    h('nav', { class: 'side', 'aria-label': 'Hauptnavigation' }, h('div', { class: 'brand' }, h('span', { class: 'brand-logo' }, '€'), 'Finanz-Tracker'),
+      NAV.map(([k, label, ico]) => h('button', { class: 'nav-item' + (S.page === k ? ' active' : ''), type: 'button', 'aria-current': S.page === k ? 'page' : null, onClick: () => go(k) }, h('span', { class: 'nav-ico' }, ico), label)),
+      h('div', { class: 'spacer' }), h('div', { class: 'tiny muted', style: { padding: '0 10px' } }, '🔒 Daten bleiben lokal')),
+    h('main', { class: 'main', id: 'main' }, (pages[S.page] || pageDashboard)()),
+    h('nav', { class: 'bottom', 'aria-label': 'Navigation' },
+      h('button', { type: 'button', class: S.page === 'dashboard' ? 'active' : '', onClick: () => go('dashboard') }, h('span', { class: 'nav-ico' }, '🏠'), 'Übersicht'),
+      h('button', { type: 'button', class: S.page === 'history' ? 'active' : '', onClick: () => go('history') }, h('span', { class: 'nav-ico' }, '🗂️'), 'Verlauf'),
+      h('button', { type: 'button', style: { color: 'var(--accent)' }, 'aria-label': 'Neue Buchung', onClick: quickAdd }, h('span', { style: { width: '46px', height: '46px', borderRadius: '50%', background: 'var(--accent)', color: 'var(--accent-ink)', display: 'grid', placeItems: 'center', fontSize: '26px', marginTop: '-18px', boxShadow: '0 6px 16px rgba(79,70,229,.4)' } }, '+')),
+      h('button', { type: 'button', class: S.page === 'budgets' ? 'active' : '', onClick: () => go('budgets') }, h('span', { class: 'nav-ico' }, '🎯'), 'Budgets'),
+      h('button', { type: 'button', class: ['income', 'expense', 'goals', 'stats', 'categories', 'settings'].includes(S.page) ? 'active' : '', onClick: moreMenu }, h('span', { class: 'nav-ico' }, '☰'), 'Mehr')));
+  // Balken animieren (Breite nach dem ersten Layout setzen)
+  requestAnimationFrame(() => requestAnimationFrame(() => r.querySelectorAll('i[data-w]').forEach((el) => { el.style.width = el.dataset.w + '%'; })));
+  window.scrollTo(0, scrollY);
+}
+
+// ---------- Start ------------------------------------------------------------
+/** Schnellaktionen der installierten App (Rechtsklick/Langdruck aufs Icon): #new-expense / #new-income */
+function openShortcut(hash) {
+  if (hash !== 'new-expense' && hash !== 'new-income') return false;
+  try { history.replaceState(null, '', '#' + S.page); } catch { /* ignorieren */ }
+  txDialog({ type: hash === 'new-income' ? 'income' : 'expense' });
+  return true;
+}
+async function boot() {
+  const hash = location.hash.replace('#', '');
+  if (NAV.some((n) => n[0] === hash)) S.page = hash;
+  S.today = L.todayISO(); S.month = L.monthOf(S.today);
+  try {
+    S.db = await openDb();
+    const loaded = await loadAll(S.db);
+    if (loaded) S.data = loaded;
+    else { S.data = L.buildSeed(S.today); S.data.settings.theme = 'system'; await writeAll(S.db, S.data); }
+    for (const k of ['lastBackupAt', 'lastSnapshotDay']) S.meta[k] = await getMeta(S.db, k);
+    S.folder = await getFolder(S.db);
+    if (S.folder) S.folderPerm = await folderPermission(S.folder, false);
+  } catch (e) {
+    S.memoryOnly = true; S.db = null; S.data = L.buildSeed(S.today);
+  }
+  await housekeeping(); applyTheme(); render();
+  if (S.folder && S.folderPerm === 'granted') scheduleFolderBackup();
+  refreshStorage(false);
+  if (S.page === 'settings') loadSettingsData();
+  openShortcut(hash);
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); S.installPrompt = e; if (settingsVisible()) render(); });
+  window.addEventListener('appinstalled', () => { S.installPrompt = null; toast('App installiert. Du findest sie jetzt wie jedes andere Programm.'); if (settingsVisible()) render(); });
+  if (channel) channel.onmessage = async () => { if (!S.db) return; try { const d = await loadAll(S.db); if (d) { S.data = d; render(); } } catch { /* ignore */ } };
+  document.addEventListener('visibilitychange', async () => { if (document.visibilityState === 'visible' && L.todayISO() !== S.today) { await housekeeping(); render(); } });
+  window.addEventListener('hashchange', () => { const p = location.hash.replace('#', ''); if (openShortcut(p)) return; if (NAV.some((n) => n[0] === p) && p !== S.page) { S.page = p; render(); } });
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+return { boot };
+})();
+APP.boot();
+
+</script>
+</body>
+</html>
